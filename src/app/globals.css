@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Old-school Roblox website look (around 2010-2012), same as the old in-game hub:
+   light grey page, blue header and nav bar, white content box, grey section strips and beveled buttons. */
+
+@theme {
+  --color-brand: #0b6fc4;
+  --color-brand-dark: #08579c;
+  --color-nav: #033f7a;
+  --color-nav-hover: #0b5ca8;
+  --color-page: #e1e1e1;
+  --color-link: #0055b3;
+  --color-money: #0a7a3a;
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+body {
+  background: var(--color-page);
+  color: #222222;
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .h1 {
+    @apply mb-2.5 text-[26px] font-bold;
+  }
+
+  .h2 {
+    @apply mt-[18px] mb-2.5 border border-[#cccccc] bg-[#eeeeee] px-2 py-[5px] text-[15px] font-bold;
+  }
+
+  .muted {
+    @apply text-sm text-[#555555];
+  }
+
+  .link {
+    @apply font-bold text-link hover:underline;
+  }
+
+  .field {
+    @apply w-full border border-[#999999] bg-white px-2 py-1.5 text-sm outline-none focus:border-brand;
+  }
+
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-[3px] border border-[#a0a0a0] border-t-[#d0d0d0] border-b-[#7a7a7a] bg-[#ededed] px-3.5 py-1.5 text-sm font-bold text-[#222222] hover:border-[#7a7a7a] hover:bg-[#f8f8f8] active:bg-[#d8d8d8] disabled:cursor-default disabled:opacity-50;
+  }
+
+  .btn-primary,
+  .btn-on {
+    @apply border-brand-dark border-t-[#3a8fd8] border-b-[#053a6a] bg-brand text-white hover:bg-[#1a80d8] active:bg-brand-dark;
+  }
+
+  .btn-play {
+    @apply rounded-[5px] border border-b-4 border-[#1e6e1e] border-t-[#5cc45c] bg-[#2f9e2f] text-3xl text-white hover:bg-[#3bb53b] active:bg-[#268526];
+  }
+
+  .card {
+    @apply block w-[170px] cursor-pointer border border-[#cccccc] bg-white p-1.5 text-left hover:border-brand hover:bg-[#f2f8fe];
+  }
+
+  .card-title {
+    @apply mt-1.5 mb-0.5 text-sm font-bold text-link;
+  }
+}
