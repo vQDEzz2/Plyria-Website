@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import Avatar from "@/components/Avatar";
-import Avatar3D from "@/components/Avatar3D";
+import Avatar3D from "@/components/Avatar3DLazy";
 import { Modal, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import {

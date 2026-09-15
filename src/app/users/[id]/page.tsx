@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import Avatar3D from "@/components/Avatar3D";
+import Avatar3D from "@/components/Avatar3DLazy";
 import { Modal, Stat, formatDate, whenText, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { findFace, findHat, normalizePlayerData, type PlayerData } from "@/lib/catalog";

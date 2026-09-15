@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Avatar3D from "@/components/Avatar3D";
+import Avatar3D from "@/components/Avatar3DLazy";
 import GameCard from "@/components/GameCard";
 import { usePlayer } from "@/lib/account";
 import { GAMES } from "@/lib/catalog";
