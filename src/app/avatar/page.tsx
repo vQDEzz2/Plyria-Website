@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import Avatar from "@/components/Avatar";
+import Avatar3D from "@/components/Avatar3D";
 import { Modal, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import {
@@ -54,8 +55,9 @@ export default function AvatarPage() {
 
       <div className="mt-1.5 flex flex-col gap-5 md:flex-row">
         <div className="md:w-[300px]">
-          <div className="flex justify-center border border-[#999999] bg-white py-3">
-            <Avatar data={data} width={220} />
+          <div className="relative flex justify-center border border-[#999999] bg-white">
+            <Avatar3D data={data} width={298} height={360} />
+            <span className="pointer-events-none absolute bottom-1.5 text-xs text-[#777777]">Drag to turn</span>
           </div>
           <div className="mt-2.5 border border-[#cccccc] bg-[#fafafa] text-[13px]">
             <div className="border-b border-[#cccccc] bg-[#eeeeee] px-2 py-1.5 text-sm font-bold">Currently Wearing</div>
@@ -79,7 +81,7 @@ export default function AvatarPage() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-t border border-b-0 border-[#cccccc] px-4 py-[7px] text-sm font-bold ${
-                  tab === t ? "bg-white text-brand" : "bg-[#e6e6e6] text-[#444444] hover:bg-[#f2f8fe]"
+                  tab === t ? "bg-white text-brand" : "bg-[#ebe5f2] text-[#444444] transition-colors hover:bg-brand-50"
                 }`}
               >
                 {t}
@@ -211,7 +213,7 @@ function Tile({ name, on, onClick, children }: { name: string; on: boolean; onCl
   return (
     <button
       onClick={onClick}
-      className={`flex w-[110px] flex-col items-center border p-1.5 ${on ? "border-2 border-brand bg-[#f2f8fe]" : "border-[#cccccc] hover:border-brand"}`}
+      className={`flex w-[110px] flex-col items-center rounded-[3px] border p-1.5 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 ${on ? "border-2 border-brand bg-brand-50" : "border-[#d3c9e0] hover:border-brand"}`}
     >
       <div className="flex h-[84px] w-[84px] items-center justify-center">{children}</div>
       <span className="mt-1 text-xs font-bold">{name}</span>

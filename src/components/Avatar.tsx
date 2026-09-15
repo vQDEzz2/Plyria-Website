@@ -39,7 +39,7 @@ export default function Avatar({
             height={h}
             rx={i === 0 ? 10 : 3}
             fill={rgbaToHex(data.bodyColors[i])}
-            stroke={isSelected ? "#0b6fc4" : "rgba(0,0,0,0.3)"}
+            stroke={isSelected ? "#7d03fd" : "rgba(0,0,0,0.3)"}
             strokeWidth={isSelected ? 4 : 1}
             className={onPartClick ? "cursor-pointer" : undefined}
             onClick={onPartClick ? () => onPartClick(i) : undefined}

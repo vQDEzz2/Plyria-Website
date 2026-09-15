@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Avatar from "@/components/Avatar";
+import Avatar3D from "@/components/Avatar3D";
 import GameCard from "@/components/GameCard";
 import { usePlayer } from "@/lib/account";
 import { GAMES } from "@/lib/catalog";
@@ -25,7 +25,7 @@ export default function HomePage() {
         className="flex h-[200px] w-[150px] items-center justify-center border border-[#999999] bg-white hover:border-brand"
         aria-label="Edit your avatar"
       >
-        <Avatar data={data} width={120} />
+        <Avatar3D data={data} width={148} height={198} />
       </Link>
     </>
   );

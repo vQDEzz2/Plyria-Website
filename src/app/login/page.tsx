@@ -51,6 +51,11 @@ export default function LoginPage() {
           Forgot password?
         </Link>
       </div>
+      <div className="mt-3 border-t border-[#eee6f7] pt-3 text-center">
+        <Link href="/download" className="text-[13px] font-bold text-link hover:underline">
+          Download Plyria for Windows
+        </Link>
+      </div>
     </AuthBox>
   );
 }

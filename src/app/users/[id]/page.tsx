@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import Avatar from "@/components/Avatar";
+import Avatar3D from "@/components/Avatar3D";
 import { Modal, Stat, formatDate, whenText, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { findFace, findHat, normalizePlayerData, type PlayerData } from "@/lib/catalog";
@@ -100,7 +100,7 @@ export default function ProfilePage() {
     <>
       <div className="flex flex-col gap-5 sm:flex-row">
         <div className="flex h-[320px] w-[240px] shrink-0 items-center justify-center border border-[#999999] bg-white">
-          {avatar ? <Avatar data={avatar} width={200} /> : <span className="muted">No avatar yet</span>}
+          {avatar ? <Avatar3D data={avatar} width={238} height={318} /> : <span className="muted">No avatar yet</span>}
         </div>
         <div className="flex-1">
           <h1 className="h1">{profile.displayName}</h1>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { usePlayer } from "@/lib/account";
 import { launchUrl } from "@/lib/launch";
@@ -7,6 +8,7 @@ import { Modal, launchActions, type Dialog } from "@/components/ui";
 
 export default function CreatePage() {
   const { session } = usePlayer();
+  const router = useRouter();
   const [dialog, setDialog] = useState<Dialog | null>(null);
 
   function openStudio() {
@@ -15,7 +17,7 @@ export default function CreatePage() {
     setDialog({
       title: "Opening Plyria Studio...",
       message: "Plyria Studio should open in a moment. If nothing happens, install Plyria and run it once, then try again.",
-      actions: launchActions(url, () => setDialog(null)),
+      actions: launchActions(url, () => setDialog(null), () => router.push("/download")),
     });
   }
 

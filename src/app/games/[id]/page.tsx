@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { usePlayer } from "@/lib/account";
 import { findGame, type PlayerData } from "@/lib/catalog";
@@ -13,6 +13,7 @@ type Mode = "solo" | "host" | "join";
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const game = findGame(id);
   const { data, save, session } = usePlayer();
   const [dialog, setDialog] = useState<Dialog | null>(null);
@@ -46,7 +47,7 @@ export default function GamePage() {
     setDialog({
       title: "Starting Plyria...",
       message: "Plyria should open in a moment. If nothing happens, install the Plyria game and run it once, then try again.",
-      actions: launchActions(url, close),
+      actions: launchActions(url, close, () => router.push("/download")),
     });
   }
 

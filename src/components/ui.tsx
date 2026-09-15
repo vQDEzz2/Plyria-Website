@@ -18,15 +18,15 @@ export function Modal({ dialog, onClose }: { dialog: Dialog | null; onClose: () 
   if (!dialog) return null;
   const actions = dialog.actions ?? [{ label: "Close", onClick: onClose }];
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-[#1b0636]/55 px-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={dialog.title}
-        className="w-full max-w-[420px] border border-brand-dark bg-white"
+        className="w-full max-w-[420px] animate-pop-in overflow-hidden rounded border border-brand-dark bg-white shadow-[0_20px_50px_-15px_rgb(27_6_54/0.7)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-brand px-3 py-2 text-[15px] font-bold text-white">{dialog.title}</div>
+        <div className="site-header px-3 py-2 text-[15px] font-bold text-white">{dialog.title}</div>
         <div className="muted p-4">{dialog.message}</div>
         <div className="flex justify-end gap-1.5 px-4 pb-4">
           {actions.map((a) => (
@@ -42,8 +42,11 @@ export function Modal({ dialog, onClose }: { dialog: Dialog | null; onClose: () 
 
 // Buttons for the "Starting Plyria..." popup. While developing, the link can be copied into the Launcher's
 // "Editor Launch Url" field to test in the Unity editor, which can't receive plyria:// links.
-export function launchActions(url: string, close: () => void): DialogAction[] {
-  const actions: DialogAction[] = [{ label: "Close", onClick: close }];
+export function launchActions(url: string, close: () => void, openDownload: () => void): DialogAction[] {
+  const actions: DialogAction[] = [
+    { label: "Download Plyria", onClick: openDownload },
+    { label: "Close", onClick: close },
+  ];
   if (process.env.NODE_ENV === "development")
     actions.unshift({ label: "Copy Link for Unity Editor", onClick: () => navigator.clipboard.writeText(url) });
   return actions;
