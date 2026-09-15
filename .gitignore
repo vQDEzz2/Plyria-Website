@@ -78,6 +78,10 @@ web_modules/
 .next
 out
 
+# Cloudflare (OpenNext and Wrangler) build output
+.open-next
+.wrangler
+
 # Nuxt.js build / generate output
 .nuxt
 dist

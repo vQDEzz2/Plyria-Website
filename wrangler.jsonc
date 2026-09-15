@@ -1,0 +1,15 @@
+{
+	// Cloudflare Workers settings for the website, built with @opennextjs/cloudflare.
+	// "name" must match the Cloudflare project name.
+	// ponytail: no R2 cache or Images binding. Every page renders in the browser and the images are plain
+	// files, so neither is needed; add them (see opennext.js.org/cloudflare) if server-rendered pages come later.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "plyria-website",
+	"compatibility_date": "2026-09-14",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	}
+}
