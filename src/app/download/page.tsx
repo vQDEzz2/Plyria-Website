@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// Where the installer is hosted (for example a GitHub Releases asset). Set in .env.local.
-const DOWNLOAD_URL = process.env.NEXT_PUBLIC_DOWNLOAD_URL;
+// The installer is PlyriaSetup.exe attached to the newest GitHub release of this repo; "latest/download"
+// always points at it, so a new release needs no website change. NEXT_PUBLIC_DOWNLOAD_URL can override it.
+const DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_DOWNLOAD_URL || "https://github.com/vQDEzz2/Plyria-Website/releases/latest/download/PlyriaSetup.exe";
 
 const STEPS = [
   { title: "Download", text: "Click the button above to get PlyriaSetup.exe." },
