@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAccount } from "@/lib/account";
 
 const AUTH_PAGES = ["/login", "/signup", "/forgot"];
@@ -17,12 +17,25 @@ const NAV = [
   { href: "/friends", label: "Friends" },
 ];
 
-// Classic spinning logo while loading, like the old game loading screens.
-export function LoadingScreen() {
+// Classic spinning logo while loading, like the old game loading screens. If loading drags on, offers a way out.
+export function LoadingScreen({ onLogOut }: { onLogOut?: () => void }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
   return (
-    <div className="brand-backdrop flex min-h-screen flex-col items-center justify-center gap-3 text-white">
+    <div className="brand-backdrop flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center text-white">
       <Image src="/images/logo.png" alt="" width={72} height={72} className="animate-logo-spin" priority />
       <span className="animate-fade-in text-lg font-bold">Loading...</span>
+      {slow && onLogOut && (
+        <div className="animate-fade-in text-sm">
+          <p className="mb-2">This is taking a while. A browser extension may be blocking Plyria, or your saved login may have expired.</p>
+          <button className="btn" onClick={onLogOut}>
+            Log Out and Try Again
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -112,7 +125,12 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
     return <div className="brand-backdrop flex min-h-screen items-center justify-center px-4 py-8">{children}</div>;
   }
 
-  if (!account.ready || !account.session || (!account.data && !account.error)) return <LoadingScreen />;
+  const logOutAndRetry = () => {
+    account.logOut();
+    router.replace("/login");
+  };
+
+  if (!account.ready || !account.session || (!account.data && !account.error)) return <LoadingScreen onLogOut={logOutAndRetry} />;
 
   return (
     <ShellFrame displayName={account.displayName} userId={account.userId} plyrium={account.data?.plyrium ?? 0}>
@@ -120,9 +138,14 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
         <div>
           <h1 className="h1">Something went wrong</h1>
           <p className="muted mb-3">{account.error}</p>
-          <button className="btn" onClick={() => account.refresh()}>
-            Try Again
-          </button>
+          <div className="flex gap-1.5">
+            <button className="btn btn-primary" onClick={() => account.refresh()}>
+              Try Again
+            </button>
+            <button className="btn" onClick={logOutAndRetry}>
+              Log Out
+            </button>
+          </div>
         </div>
       ) : (
         children

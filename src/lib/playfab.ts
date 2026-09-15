@@ -80,6 +80,8 @@ async function call<T>(api: string, body: object, authenticated = true): Promise
         ...(authenticated && session ? { "X-Authorization": session.ticket } : {}),
       },
       body: JSON.stringify(body),
+      // A blocked or stalled request (for example by a browser extension) fails instead of loading forever.
+      signal: AbortSignal.timeout(15000),
     });
     json = await response.json();
   } catch {
