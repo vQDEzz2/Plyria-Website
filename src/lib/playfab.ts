@@ -248,6 +248,36 @@ async function friendScript(functionName: string, friendId: string) {
   return data.FunctionResult.message ?? "";
 }
 
+// ---------- Quests (free Plyrium; CloudScript pays them, clients can't add currency) ----------
+
+export type Quest = {
+  id: string;
+  name: string;
+  period: "daily" | "weekly";
+  reward: number;
+  goal: number;
+  progress: number;
+  claimed: boolean;
+};
+
+async function questScript(functionName: string, parameter: Record<string, unknown> = {}) {
+  const data = await call<{
+    FunctionResult?: { ok?: boolean; message?: string; quests?: Quest[]; reward?: number };
+    Error?: { Error?: string; Message?: string };
+  }>("ExecuteCloudScript", { FunctionName: functionName, FunctionParameter: parameter });
+  if (data.Error || !data.FunctionResult)
+    throw new PlayFabError("Quests aren't set up yet (CloudScript missing).", data.Error?.Error ?? "CloudScriptNotFound");
+  return data.FunctionResult;
+}
+
+export const getQuests = () => questScript("GetQuests").then((r) => r.quests ?? []);
+
+export async function claimQuest(questId: string) {
+  const result = await questScript("ClaimQuest", { questId });
+  if (!result.ok) throw new PlayFabError(result.message ?? "Couldn't claim that quest.", "QuestError");
+  return { message: result.message ?? "", reward: result.reward ?? 0, quests: result.quests ?? [] };
+}
+
 // Any player's confirmed friends, for their profile page (CloudScript: the client API only reads your own).
 export type PublicFriend = { playFabId: string; username: string; displayName: string };
 
