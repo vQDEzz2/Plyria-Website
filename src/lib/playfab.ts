@@ -169,6 +169,20 @@ export async function findPlayer(query: string) {
 
 // ---------- User Data ("PlayerData" and "Blurb" are public so profiles can show them) ----------
 
+// The title only accepts valid JSON in player data, so plain text is stored as a JSON string.
+// Text saved before this change is read back unchanged.
+export const packText = (text: string) => JSON.stringify(text ?? "");
+
+export function unpackText(value: string | undefined): string {
+  if (!value) return "";
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return typeof parsed === "string" ? parsed : value;
+  } catch {
+    return value;
+  }
+}
+
 export const getUserData = (keys: string[], playFabId?: string) =>
   call<{ Data?: Record<string, { Value: string }> }>("GetUserData", { Keys: keys, PlayFabId: playFabId }).then(
     (d) => Object.fromEntries(Object.entries(d.Data ?? {}).map(([k, v]) => [k, v.Value])) as Record<string, string>,
@@ -232,6 +246,21 @@ async function friendScript(functionName: string, friendId: string) {
   if (!data.FunctionResult) throw new PlayFabError("Friend requests aren't set up yet (CloudScript missing).", "CloudScriptNotFound");
   if (!data.FunctionResult.ok) throw new PlayFabError(data.FunctionResult.message ?? "Error", "FriendError");
   return data.FunctionResult.message ?? "";
+}
+
+// Any player's confirmed friends, for their profile page (CloudScript: the client API only reads your own).
+export type PublicFriend = { playFabId: string; username: string; displayName: string };
+
+export async function getPlayerFriends(playFabId: string): Promise<PublicFriend[]> {
+  const data = await call<{ FunctionResult?: { friends?: PublicFriend[] } }>("ExecuteCloudScript", {
+    FunctionName: "GetPlayerFriends",
+    FunctionParameter: { playerId: playFabId },
+  });
+  return (data.FunctionResult?.friends ?? []).map((f) => ({
+    playFabId: f.playFabId,
+    username: maskBadWords(f.username),
+    displayName: maskBadWords(f.displayName),
+  }));
 }
 
 export const sendFriendRequest = (id: string) => friendScript("SendFriendRequest", id);

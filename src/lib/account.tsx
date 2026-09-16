@@ -66,7 +66,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       player.owned = [...new Set([...player.owned.filter((id) => !PAID.has(id)), ...inventory.items])];
       setInfo(account);
       setData(player);
-      setBlurb(userData.Blurb ?? "");
+      setBlurb(pf.unpackText(userData.Blurb));
       if (!saved) await pf.updateUserData({ PlayerData: JSON.stringify(player) });
     } catch (e) {
       if (e instanceof pf.PlayFabError && e.code === "NotAuthenticated") setSession(null);

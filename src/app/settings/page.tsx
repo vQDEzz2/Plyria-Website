@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Modal, formatDate, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { hasBadWords } from "@/lib/filter";
-import { sendPasswordReset, setDisplayName, updateUserData } from "@/lib/playfab";
+import { packText, sendPasswordReset, setDisplayName, updateUserData } from "@/lib/playfab";
 
 type Status = { text: string; error: boolean };
 
@@ -57,7 +57,7 @@ export default function SettingsPage() {
     run(setBlurbStatus, async () => {
       const text = blurb.trim().slice(0, 1000);
       if (hasBadWords(text)) throw new Error("Take the blocked words out of your About first.");
-      await (text ? updateUserData({ Blurb: text }) : updateUserData({}, ["Blurb"]));
+      await (text ? updateUserData({ Blurb: packText(text) }) : updateUserData({}, ["Blurb"]));
       account.setBlurb(text);
       return "Saved.";
     });

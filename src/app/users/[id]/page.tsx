@@ -4,19 +4,25 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Avatar3D from "@/components/Avatar3DLazy";
+import FriendList from "@/components/FriendList";
+import PlaceCard from "@/components/PlaceCard";
 import { Modal, Stat, formatDate, whenText, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { findFace, findHat, normalizePlayerData, type PlayerData } from "@/lib/catalog";
 import { maskBadWords } from "@/lib/filter";
+import { getPlaces, type Place } from "@/lib/places";
 import {
   acceptFriendRequest,
   getAccountInfo,
   getFriends,
   getLastLogin,
+  getPlayerFriends,
   getUserData,
   removeFriend,
   sendFriendRequest,
+  type PublicFriend,
   toPlayFabId,
+  unpackText,
   type FriendStatus,
 } from "@/lib/playfab";
 
@@ -30,16 +36,20 @@ type Profile = {
   blurb: string;
   avatar: PlayerData | null;
   friendStatus: FriendStatus | null;
+  friends: PublicFriend[];
+  places: Place[];
 };
 
 async function loadProfile(userId: string, myPlayFabId: string): Promise<Profile> {
   if (!/^\d+$/.test(userId)) throw new Error("That isn't a user ID.");
   const playFabId = toPlayFabId(userId);
-  const [info, userData, lastLogin, friends] = await Promise.all([
+  const [info, userData, lastLogin, friends, theirFriends, places] = await Promise.all([
     getAccountInfo({ PlayFabId: playFabId }),
     getUserData(["PlayerData", "Blurb"], playFabId).catch(() => ({}) as Record<string, string>),
     getLastLogin(playFabId),
     playFabId === myPlayFabId ? Promise.resolve([]) : getFriends().catch(() => []),
+    getPlayerFriends(playFabId).catch(() => []),   // needs CloudScript; an empty list just hides the box
+    getPlaces(playFabId).catch(() => []),
   ]);
   let avatar: PlayerData | null = null;
   try {
@@ -55,9 +65,11 @@ async function loadProfile(userId: string, myPlayFabId: string): Promise<Profile
     displayName: maskBadWords(info.TitleInfo?.DisplayName || info.Username || "Player"),
     created: info.Created,
     lastLogin,
-    blurb: maskBadWords(userData.Blurb ?? ""),
+    blurb: maskBadWords(unpackText(userData.Blurb)),
     avatar,
     friendStatus: friends.find((f) => f.playFabId === playFabId)?.status ?? null,
+    friends: theirFriends,
+    places: places.filter((p) => p.published),
   };
 }
 
@@ -150,6 +162,20 @@ export default function ProfilePage() {
 
       <h2 className="h2">About</h2>
       <p className="muted whitespace-pre-line">{profile.blurb.trim() || "This player hasn't written anything yet."}</p>
+
+      <h2 className="h2">Games ({profile.places.length})</h2>
+      {profile.places.length === 0 ? (
+        <p className="muted">{mine ? "You haven't published any games yet." : "This player hasn't published any games yet."}</p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {profile.places.map((place) => (
+            <PlaceCard key={place.id} place={place} creator={profile.displayName} creatorId={profile.playFabId} />
+          ))}
+        </div>
+      )}
+
+      <h2 className="h2">Friends ({profile.friends.length})</h2>
+      <FriendList friends={profile.friends} empty={mine ? "You haven't added any friends yet." : "No friends yet."} />
 
       {avatar && (
         <>
