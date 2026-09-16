@@ -13,6 +13,7 @@ const NAV = [
   { href: "/games", label: "Games" },
   { href: "/create", label: "Create" },
   { href: "/marketplace", label: "Marketplace" },
+  { href: "/earn", label: "Earn Plyrium" },
   { href: "/avatar", label: "Avatar" },
   { href: "/friends", label: "Friends" },
 ];
