@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Modal, formatDate, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
+import { hasBadWords } from "@/lib/filter";
 import { sendPasswordReset, setDisplayName, updateUserData } from "@/lib/playfab";
 
 type Status = { text: string; error: boolean };
@@ -45,6 +46,7 @@ export default function SettingsPage() {
     run(setNameStatus, async () => {
       const trimmed = name.trim();
       if (trimmed.length < 3 || trimmed.length > 25) throw new Error("Display names must be 3 to 25 characters.");
+      if (hasBadWords(trimmed)) throw new Error("That display name isn't allowed. Please pick another one.");
       const saved = await setDisplayName(trimmed);
       account.setDisplayName(saved);
       await account.save({ ...account.data, username: saved });
@@ -54,6 +56,7 @@ export default function SettingsPage() {
   const saveBlurb = () =>
     run(setBlurbStatus, async () => {
       const text = blurb.trim().slice(0, 1000);
+      if (hasBadWords(text)) throw new Error("Take the blocked words out of your About first.");
       await (text ? updateUserData({ Blurb: text }) : updateUserData({}, ["Blurb"]));
       account.setBlurb(text);
       return "Saved.";

@@ -1,6 +1,8 @@
 // PlayFab Client API over plain fetch (title 10C4D2). The browser talks to PlayFab directly, the same
 // accounts, inventory and friends the Unity game uses. There are no secrets here: client calls only.
 
+import { maskBadWords } from "./filter";
+
 export const TITLE_ID = "10C4D2";
 const API = `https://${TITLE_ID}.playfabapi.com/Client`;
 const SESSION_KEY = "plyria.session";
@@ -209,8 +211,8 @@ export async function getFriends(): Promise<Friend[]> {
     .filter((f) => STATUS[f.Tags?.[0] ?? ""])
     .map((f) => ({
       playFabId: f.FriendPlayFabId,
-      username: f.Username ?? "",
-      displayName: f.Profile?.DisplayName || f.TitleDisplayName || f.Username || "Player",
+      username: maskBadWords(f.Username ?? ""),
+      displayName: maskBadWords(f.Profile?.DisplayName || f.TitleDisplayName || f.Username || "Player"),
       lastLogin: f.Profile?.LastLogin,
       status: STATUS[f.Tags![0]],
     }))

@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AuthBox, { Field } from "@/components/AuthBox";
 import { useAccount } from "@/lib/account";
+import { hasBadWords } from "@/lib/filter";
 import { signUp } from "@/lib/playfab";
 
 function problem(username: string, password: string, confirm: string) {
   if (username.length < 3 || username.length > 20) return "Usernames must be 3 to 20 characters.";
   if (!/^[A-Za-z0-9]+$/.test(username)) return "Usernames can only use letters and numbers.";
+  if (hasBadWords(username)) return "That username isn't allowed. Please pick another one.";
   if (password.length < 6) return "Passwords must be at least 6 characters.";
   if (password.length > 100) return "Passwords can be at most 100 characters.";
   if (password !== confirm) return "The passwords don't match.";

@@ -7,6 +7,7 @@ import Avatar3D from "@/components/Avatar3DLazy";
 import { Modal, Stat, formatDate, whenText, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { findFace, findHat, normalizePlayerData, type PlayerData } from "@/lib/catalog";
+import { maskBadWords } from "@/lib/filter";
 import {
   acceptFriendRequest,
   getAccountInfo,
@@ -50,10 +51,11 @@ async function loadProfile(userId: string, myPlayFabId: string): Promise<Profile
     userId,
     playFabId,
     username: info.Username ?? "",
-    displayName: info.TitleInfo?.DisplayName || info.Username || "Player",
+    // Masked here too: names and About text written before the filter existed, or set from the game.
+    displayName: maskBadWords(info.TitleInfo?.DisplayName || info.Username || "Player"),
     created: info.Created,
     lastLogin,
-    blurb: userData.Blurb ?? "",
+    blurb: maskBadWords(userData.Blurb ?? ""),
     avatar,
     friendStatus: friends.find((f) => f.playFabId === playFabId)?.status ?? null,
   };
