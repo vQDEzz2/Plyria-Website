@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plyria sitemap for Google Search Console. Only pages visitors can open without logging in. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://plyria.net/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://plyria.net/download</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://plyria.net/signup</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://plyria.net/login</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+</urlset>
