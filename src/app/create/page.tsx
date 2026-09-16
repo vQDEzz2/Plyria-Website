@@ -20,12 +20,12 @@ export default function CreatePage() {
       .catch(() => setPlaces([]));
   }, []);
 
-  function openStudio(placeId?: string) {
-    const url = launchUrl(session, "studio", placeId ? { place: placeId } : {});
+  function open(action: "play" | "studio", placeId?: string) {
+    const url = launchUrl(session, action, placeId ? { place: placeId } : {});
     window.location.assign(url);
     setDialog({
-      title: placeId ? "Opening this game in Studio..." : "Opening Plyria Studio...",
-      message: "Plyria Studio should open in a moment. If nothing happens, install Plyria and run it once, then try again.",
+      title: action === "play" ? "Starting Plyria..." : placeId ? "Opening this game in Studio..." : "Opening Plyria Studio...",
+      message: "Plyria should open in a moment. If nothing happens, install Plyria and run it once, then try again.",
       actions: launchActions(url, () => setDialog(null), () => router.push("/download")),
     });
   }
@@ -52,7 +52,7 @@ export default function CreatePage() {
         Build your own games in Plyria Studio. Games are saved on the computer that made them; publishing puts their
         details here, so you can change the genre or hide a game without opening Studio.
       </p>
-      <button className="btn btn-primary mt-3" onClick={() => openStudio()}>
+      <button className="btn btn-primary mt-3" onClick={() => open("studio")}>
         Open Plyria Studio
       </button>
 
@@ -90,7 +90,11 @@ export default function CreatePage() {
                 {place.published ? "Public" : "Private"}
               </button>
 
-              <button className="btn btn-primary" onClick={() => openStudio(place.id)}>
+              <button className="btn" onClick={() => open("play", place.id)}>
+                Play
+              </button>
+
+              <button className="btn btn-primary" onClick={() => open("studio", place.id)}>
                 Edit
               </button>
             </div>
