@@ -6,14 +6,12 @@ import { useState } from "react";
 import { usePlayer } from "@/lib/account";
 import {
   BUNDLES,
-  COLORS,
   FACES,
   HATS,
   PANTS,
   SHIRTS,
   itemId,
   ownsBundle,
-  ownsColor,
   ownsFace,
   ownsHat,
   ownsPants,
@@ -103,7 +101,7 @@ export default function MarketplacePage() {
   return (
     <>
       <h1 className="h1">Marketplace</h1>
-      <p className="muted">Bundles, clothing, hats, faces and body colors for your avatar. Get them here, then wear them in the Avatar editor.</p>
+      <p className="muted">Bundles, clothing, hats and faces for your avatar. Body colors are free in the Avatar editor. Get them here, then wear them in the Avatar editor.</p>
 
       <h2 className="h2">Bundles</h2>
       <div className="flex flex-wrap gap-3">
@@ -165,17 +163,6 @@ export default function MarketplacePage() {
         })}
       </div>
 
-      <h2 className="h2">Body Colors</h2>
-      <div className="flex flex-wrap gap-3">
-        {COLORS.filter((c) => c.price > 0).map((c) => {
-          const owned = ownsColor(data, c);
-          return (
-            <ItemCard key={c.id} title={c.name} owned={owned} price={c.price} onClick={() => buy("color", c.id, c.name, c.price, owned)}>
-              <div className="h-full w-full" style={{ backgroundColor: c.hex }} />
-            </ItemCard>
-          );
-        })}
-      </div>
       <Modal dialog={dialog} onClose={close} />
     </>
   );

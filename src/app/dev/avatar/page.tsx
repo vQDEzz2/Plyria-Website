@@ -17,7 +17,9 @@ export default function DevAvatarPage() {
     shirt,
     pants,
     bodyPartBundles: BODY_PARTS.map(() => bundle),
-    bodyColors: [COLORS[7], COLORS[11], COLORS[7], COLORS[7], COLORS[9], COLORS[9]].map((c) => hexToRgba(c.hex)),
+    bodyColors: ["Bright yellow", "Bright blue", "Bright yellow", "Bright yellow", "Bright green", "Bright green"].map((name) =>
+      hexToRgba(COLORS.find((c) => c.name === name)!.hex),
+    ),
   });
 
   const [headshot, setHeadshot] = useState("");
