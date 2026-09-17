@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import AvatarHeadshot from "@/components/AvatarHeadshot";
 import { Modal, whenText, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import {
@@ -67,9 +68,7 @@ export default function FriendsPage() {
         {list.length === 0 && <p className="muted">{empty}</p>}
         {list.map((friend) => (
           <div key={friend.playFabId} className="mb-2 flex flex-wrap items-center gap-2 border border-[#cccccc] bg-[#fafafa] p-2">
-            <div className="flex h-12 w-12 items-center justify-center bg-brand text-2xl font-bold text-white">
-              {friend.displayName.charAt(0).toUpperCase()}
-            </div>
+            <AvatarHeadshot playFabId={friend.playFabId} name={friend.displayName} size={48} />
             <div className="min-w-[160px] flex-1">
               <div className="text-[15px] font-bold text-link">{friend.displayName}</div>
               <div className="text-xs text-[#777777]">@{friend.username}</div>

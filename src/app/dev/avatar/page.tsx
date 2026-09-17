@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Avatar3D from "@/components/Avatar3D";
+import { useEffect, useState } from "react";
+import Avatar3D, { renderHeadshot } from "@/components/Avatar3D";
 import { BODY_PARTS, BUNDLES, COLORS, FACES, HATS, PANTS, SHIRTS, hexToRgba, normalizePlayerData } from "@/lib/catalog";
 
 // Development only (hidden in production by SiteShell): checks the exported 3D models without logging in.
@@ -19,6 +19,16 @@ export default function DevAvatarPage() {
     bodyPartBundles: BODY_PARTS.map(() => bundle),
     bodyColors: [COLORS[7], COLORS[11], COLORS[7], COLORS[7], COLORS[9], COLORS[9]].map((c) => hexToRgba(c.hex)),
   });
+
+  const [headshot, setHeadshot] = useState("");
+  const look = JSON.stringify(data);
+  useEffect(() => {
+    let cancelled = false;
+    renderHeadshot(JSON.parse(look), 60).then((url) => !cancelled && setHeadshot(url));
+    return () => {
+      cancelled = true;
+    };
+  }, [look]);
 
   return (
     <div className="brand-backdrop flex min-h-screen items-center justify-center px-4 py-8">
@@ -64,8 +74,17 @@ export default function DevAvatarPage() {
           ))}
         </select>
       </div>
-      <div className="border border-[#999999]">
-        <Avatar3D data={data} width={320} height={420} />
+      <div className="flex gap-3">
+        <div className="border border-[#999999]">
+          <Avatar3D data={data} width={320} height={420} />
+        </div>
+        <div className="text-xs">
+          <div className="mb-1 font-bold">Headshot (friend lists)</div>
+          {headshot && (
+            // eslint-disable-next-line @next/next/no-img-element -- generated data URL
+            <img src={headshot} alt="Headshot" width={60} height={60} className="border border-[#cccccc]" />
+          )}
+        </div>
       </div>
     </div>
     </div>

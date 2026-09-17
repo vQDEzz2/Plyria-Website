@@ -225,6 +225,50 @@ async function buildAvatar(data: PlayerData): Promise<Build> {
   return { objects, materials };
 }
 
+// ---------- Headshots: a front close-up of an avatar's head, as a picture ----------
+// Friend lists show many players at once, and browsers only allow a few live WebGL canvases, so one shared
+// hidden renderer draws each headshot once and hands back a PNG data URL. Renders run one at a time.
+
+let headshotRenderer: THREE.WebGLRenderer | null = null;
+let headshotQueue: Promise<unknown> = Promise.resolve();
+const headshots = new Map<string, Promise<string>>();
+
+export function renderHeadshot(data: PlayerData, size = 150): Promise<string> {
+  const key = `${size}|${JSON.stringify([data.bodyPartBundles[0], data.bodyColors[0], data.face, data.hat, data.shirt])}`;
+  if (headshots.has(key)) return headshots.get(key)!;
+
+  const job = headshotQueue.then(async () => {
+    const pixels = size * 2; // drawn at double size so it stays sharp on high-DPI screens
+    if (!headshotRenderer) {
+      headshotRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      headshotRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    }
+    headshotRenderer.setPixelRatio(1);
+    headshotRenderer.setSize(pixels, pixels, false);
+
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x9a9a9a, 2.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+    sun.position.set(3, 5, 9);
+    scene.add(sun);
+
+    // The head spans about y 0.9 to 2.1 (a hat reaches 2.4). Straight on, framed on the face.
+    const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
+    camera.position.set(0, 1.62, 5.4);
+    camera.lookAt(0, 1.6, 0);
+
+    const build = await buildAvatar(data);
+    build.objects.forEach((o) => scene.add(o));
+    headshotRenderer.render(scene, camera);
+    const url = headshotRenderer.domElement.toDataURL("image/png");
+    build.materials.forEach((m) => m.dispose());
+    return url;
+  });
+  headshotQueue = job.catch(() => undefined);
+  headshots.set(key, job);
+  return job;
+}
+
 export default function Avatar3D({ data, width, height }: { data: PlayerData; width: number; height: number }) {
   const mount = useRef<HTMLDivElement>(null);
   const view = useRef<{ root: THREE.Group; render: () => void } | null>(null);
