@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Avatar3D from "@/components/Avatar3DLazy";
+import AvatarHeadshot from "@/components/AvatarHeadshot";
 import FriendList from "@/components/FriendList";
 import PlaceCard from "@/components/PlaceCard";
 import { Modal, Stat, formatDate, whenText, type Dialog } from "@/components/ui";
@@ -117,8 +118,15 @@ export default function ProfilePage() {
           {avatar ? <Avatar3D data={avatar} width={238} height={318} /> : <span className="muted">No avatar yet</span>}
         </div>
         <div className="flex-1">
-          <h1 className="h1">{profile.displayName}</h1>
-          <p className="-mt-1.5 mb-2 text-sm text-[#777777]">@{profile.username}</p>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="border border-[#cccccc]">
+              <AvatarHeadshot playFabId={profile.playFabId} name={profile.displayName} size={64} />
+            </div>
+            <div>
+              <h1 className="h1 mb-0">{profile.displayName}</h1>
+              <p className="text-sm text-[#777777]">@{profile.username}</p>
+            </div>
+          </div>
           <div className="flex flex-wrap">
             <Stat label="User ID" value={profile.userId} />
             <Stat label="Joined" value={formatDate(profile.created)} />
