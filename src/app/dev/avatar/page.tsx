@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import Avatar3D from "@/components/Avatar3D";
-import { BODY_PARTS, BUNDLES, COLORS, FACES, HATS, hexToRgba, normalizePlayerData } from "@/lib/catalog";
+import { BODY_PARTS, BUNDLES, COLORS, FACES, HATS, PANTS, SHIRTS, hexToRgba, normalizePlayerData } from "@/lib/catalog";
 
 // Development only (hidden in production by SiteShell): checks the exported 3D models without logging in.
 export default function DevAvatarPage() {
   const [bundle, setBundle] = useState(BUNDLES[0].id);
   const [face, setFace] = useState(FACES[0].id);
   const [hat, setHat] = useState(HATS[0]?.id ?? "");
+  const [shirt, setShirt] = useState(SHIRTS[0]?.id ?? "");
+  const [pants, setPants] = useState(PANTS[0]?.id ?? "");
   const data = normalizePlayerData({
     face,
     hat,
+    shirt,
+    pants,
     bodyPartBundles: BODY_PARTS.map(() => bundle),
     bodyColors: [COLORS[7], COLORS[11], COLORS[7], COLORS[7], COLORS[9], COLORS[9]].map((c) => hexToRgba(c.hex)),
   });
@@ -40,6 +44,22 @@ export default function DevAvatarPage() {
           {HATS.map((h) => (
             <option key={h.id} value={h.id}>
               {h.name}
+            </option>
+          ))}
+        </select>
+        <select className="field w-auto" value={shirt} onChange={(e) => setShirt(e.target.value)}>
+          <option value="">No shirt</option>
+          {SHIRTS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <select className="field w-auto" value={pants} onChange={(e) => setPants(e.target.value)}>
+          <option value="">No pants</option>
+          {PANTS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
             </option>
           ))}
         </select>

@@ -3,12 +3,14 @@
 
 export const BODY_PARTS = ["Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"] as const;
 
-export type ItemType = "color" | "face" | "hat" | "bundle";
+export type ItemType = "color" | "face" | "hat" | "bundle" | "shirt" | "pants";
 
 export type ColorItem = { id: string; name: string; hex: string; price: number };
 export type FaceItem = { id: string; name: string; price: number; starter?: boolean; image: string };
 export type HatItem = { id: string; name: string; price: number; image: string };
 export type BundleItem = { id: string; name: string; price: number; starter?: boolean; image?: string };
+// A classic shirt or pants: a 585x559 Roblox template PNG (template) and a flat front view for tiles (image).
+export type ClothingItem = { id: string; name: string; price: number; starter?: boolean; template: string; image: string };
 
 const color = (name: string, hex: string, price = 0): ColorItem => ({ id: name, name, hex, price });
 
@@ -61,6 +63,25 @@ export const HATS: HatItem[] = [
   { id: "baseball-cap", name: "Baseball Cap", price: 75, image: "/images/hat-baseball-cap.png" },
 ];
 
+const clothing = (id: string, name: string, price: number, starter = false): ClothingItem => ({
+  id,
+  name,
+  price,
+  starter,
+  template: `/images/clothing/${id}.png`,
+  image: `/images/clothing/${id}-icon.png`,
+});
+
+// Same files as Assets/Resources/Shirts and Assets/Resources/Pants in Unity.
+export const SHIRTS: ClothingItem[] = [
+  clothing("plyria-tee", "Plyria Tee", 0, true),
+  clothing("leather-jacket", "Leather Jacket", 75),
+];
+export const PANTS: ClothingItem[] = [
+  clothing("blue-jeans", "Blue Jeans", 0, true),
+  clothing("black-jeans", "Black Jeans", 50),
+];
+
 export const BUNDLES: BundleItem[] = [
   { id: "classic", name: "Classic", price: 0, starter: true },
   { id: "female", name: "Female", price: 0, image: "/images/bundle-female.png" },
@@ -73,6 +94,8 @@ export function itemId(type: ItemType, id: string) {
 
 export const findFace = (id: string) => FACES.find((f) => f.id === id) ?? FACES[0];
 export const findHat = (id: string) => HATS.find((h) => h.id === id);
+export const findShirt = (id: string) => SHIRTS.find((s) => s.id === id);
+export const findPants = (id: string) => PANTS.find((p) => p.id === id);
 export const findBundle = (id: string) => BUNDLES.find((b) => b.id === id) ?? BUNDLES[0];
 
 export type Game = {
@@ -112,6 +135,8 @@ export type PlayerData = {
   username: string;
   face: string;
   hat: string;
+  shirt: string;
+  pants: string;
   plyrium: number;
   owned: string[];
   bodyColors: Rgba[];
@@ -141,6 +166,8 @@ export function normalizePlayerData(raw: unknown): PlayerData {
     username: typeof d.username === "string" ? d.username : "Player",
     face: typeof d.face === "string" && d.face ? d.face : "smile",
     hat: typeof d.hat === "string" ? d.hat : "",
+    shirt: typeof d.shirt === "string" ? d.shirt : "",
+    pants: typeof d.pants === "string" ? d.pants : "",
     plyrium: typeof d.plyrium === "number" ? d.plyrium : 0,
     owned: list(d.owned),
     bodyColors:
@@ -160,3 +187,5 @@ export const ownsColor = (d: PlayerData, c: ColorItem) => c.price === 0 || d.own
 export const ownsFace = (d: PlayerData, f: FaceItem) => !!f.starter || d.owned.includes(itemId("face", f.id));
 export const ownsHat = (d: PlayerData, h: HatItem) => d.owned.includes(itemId("hat", h.id));
 export const ownsBundle = (d: PlayerData, b: BundleItem) => !!b.starter || d.owned.includes(itemId("bundle", b.id));
+export const ownsShirt = (d: PlayerData, s: ClothingItem) => !!s.starter || d.owned.includes(itemId("shirt", s.id));
+export const ownsPants = (d: PlayerData, p: ClothingItem) => !!p.starter || d.owned.includes(itemId("pants", p.id));

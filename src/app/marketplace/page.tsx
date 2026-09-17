@@ -4,7 +4,22 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { usePlayer } from "@/lib/account";
-import { BUNDLES, COLORS, FACES, HATS, itemId, ownsBundle, ownsColor, ownsFace, ownsHat, type ItemType } from "@/lib/catalog";
+import {
+  BUNDLES,
+  COLORS,
+  FACES,
+  HATS,
+  PANTS,
+  SHIRTS,
+  itemId,
+  ownsBundle,
+  ownsColor,
+  ownsFace,
+  ownsHat,
+  ownsPants,
+  ownsShirt,
+  type ItemType,
+} from "@/lib/catalog";
 import { purchase } from "@/lib/playfab";
 import { Modal, PriceTag, type Dialog } from "@/components/ui";
 
@@ -88,7 +103,7 @@ export default function MarketplacePage() {
   return (
     <>
       <h1 className="h1">Marketplace</h1>
-      <p className="muted">Bundles, hats, faces and body colors for your avatar. Get them here, then wear them in the Avatar editor.</p>
+      <p className="muted">Bundles, clothing, hats, faces and body colors for your avatar. Get them here, then wear them in the Avatar editor.</p>
 
       <h2 className="h2">Bundles</h2>
       <div className="flex flex-wrap gap-3">
@@ -97,6 +112,30 @@ export default function MarketplacePage() {
           return (
             <ItemCard key={b.id} title={`${b.name} Bundle`} owned={owned} price={b.price} onClick={() => buy("bundle", b.id, `${b.name} Bundle`, b.price, owned)}>
               {b.image && <Image src={b.image} alt="" width={156} height={156} className="h-full w-full object-cover" />}
+            </ItemCard>
+          );
+        })}
+      </div>
+
+      <h2 className="h2">Shirts</h2>
+      <div className="flex flex-wrap gap-3">
+        {SHIRTS.filter((s) => !s.starter).map((s) => {
+          const owned = ownsShirt(data, s);
+          return (
+            <ItemCard key={s.id} title={s.name} owned={owned} price={s.price} onClick={() => buy("shirt", s.id, s.name, s.price, owned)}>
+              <Image src={s.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
+            </ItemCard>
+          );
+        })}
+      </div>
+
+      <h2 className="h2">Pants</h2>
+      <div className="flex flex-wrap gap-3">
+        {PANTS.filter((p) => !p.starter).map((p) => {
+          const owned = ownsPants(data, p);
+          return (
+            <ItemCard key={p.id} title={p.name} owned={owned} price={p.price} onClick={() => buy("pants", p.id, p.name, p.price, owned)}>
+              <Image src={p.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
             </ItemCard>
           );
         })}

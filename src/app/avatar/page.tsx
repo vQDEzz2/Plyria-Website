@@ -13,18 +13,25 @@ import {
   COLORS,
   FACES,
   HATS,
+  PANTS,
+  SHIRTS,
   findBundle,
   findFace,
   findHat,
+  findPants,
+  findShirt,
   hexToRgba,
   ownsBundle,
   ownsColor,
   ownsFace,
   ownsHat,
+  ownsPants,
+  ownsShirt,
+  type ClothingItem,
   type PlayerData,
 } from "@/lib/catalog";
 
-const TABS = ["Body Colors", "Body Parts", "Faces", "Hats"] as const;
+const TABS = ["Body Colors", "Body Parts", "Faces", "Hats", "Shirts", "Pants"] as const;
 const ALL_PARTS = BODY_PARTS.map((_, i) => i);
 
 export default function AvatarPage() {
@@ -65,6 +72,8 @@ export default function AvatarPage() {
               ["Body", bundleIds.size === 1 ? findBundle(data.bodyPartBundles[0]).name : "Mixed"],
               ["Face", findFace(data.face).name],
               ["Hat", hat ? hat.name : "None"],
+              ["Shirt", findShirt(data.shirt)?.name ?? "None"],
+              ["Pants", findPants(data.pants)?.name ?? "None"],
             ].map(([label, value]) => (
               <div key={label} className="flex border-b border-[#eeeeee] px-2 py-1.5">
                 <span className="w-[60px] text-[#777777]">{label}</span>
@@ -181,6 +190,24 @@ export default function AvatarPage() {
               </>
             )}
 
+            {tab === "Shirts" && (
+              <ClothingTab
+                kind="shirt"
+                items={SHIRTS.filter((s) => ownsShirt(data, s))}
+                worn={data.shirt}
+                onWear={(id) => update((next) => (next.shirt = id))}
+              />
+            )}
+
+            {tab === "Pants" && (
+              <ClothingTab
+                kind="pants"
+                items={PANTS.filter((p) => ownsPants(data, p))}
+                worn={data.pants}
+                onWear={(id) => update((next) => (next.pants = id))}
+              />
+            )}
+
             {tab === "Hats" && (
               <>
                 <p className="muted">Click a hat to wear it.</p>
@@ -205,6 +232,34 @@ export default function AvatarPage() {
         </div>
       </div>
       <Modal dialog={dialog} onClose={() => setDialog(null)} />
+    </>
+  );
+}
+
+function ClothingTab({
+  kind,
+  items,
+  worn,
+  onWear,
+}: {
+  kind: "shirt" | "pants";
+  items: ClothingItem[];
+  worn: string;
+  onWear: (id: string) => void;
+}) {
+  return (
+    <>
+      <p className="muted">Click {kind === "shirt" ? "a shirt" : "pants"} to wear {kind === "shirt" ? "it" : "them"}.</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Tile name="None" on={!worn} onClick={() => onWear("")}>
+          <span className="text-2xl text-[#999999]">&#8709;</span>
+        </Tile>
+        {items.map((item) => (
+          <Tile key={item.id} name={item.name} on={worn === item.id} onClick={() => onWear(item.id)}>
+            <Image src={item.image} alt="" width={84} height={84} className="h-[84px] w-[84px] object-contain" />
+          </Tile>
+        ))}
+      </div>
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { findFace, findHat, rgbaToHex, type PlayerData } from "@/lib/catalog";
+import { findFace, findHat, findPants, findShirt, rgbaToHex, type PlayerData } from "@/lib/catalog";
 
 // 3D avatar made from the game's own models, exported from the Unity project into public/models:
 //   <bundle>/<part>.obj for each body part (same order as BODY_PARTS), <bundle>/face.obj (the face decal layer),
@@ -42,6 +42,76 @@ function meshesOf(group: THREE.Object3D) {
   return meshes;
 }
 
+// ---------- Classic clothing, the same projection as PlayerData.ClothingMesh in Unity ----------
+// Every vertex of a body part picks the side of the part's bounding box its normal faces most and maps into
+// that side's rectangle of the 585x559 Roblox template. The box is the part's own size, so bundle bodies get the
+// template squeezed or stretched to fit. These models face +Z with the character's right at -X.
+
+const TEMPLATE_W = 585;
+const TEMPLATE_H = 559;
+type Rect = readonly [x: number, y: number, w: number, h: number];
+type Region = "torso" | "right" | "left";
+// Per side: Front (+Z), Back (-Z), Right (character's right, -X), Left (+X), Up (+Y), Down (-Y).
+const TEMPLATE: Record<Region, readonly Rect[]> = {
+  torso: [[231, 74, 128, 128], [427, 74, 128, 128], [165, 74, 64, 128], [361, 74, 64, 128], [231, 8, 128, 64], [231, 204, 128, 64]],
+  right: [[217, 355, 64, 128], [85, 355, 64, 128], [151, 355, 64, 128], [19, 355, 64, 128], [217, 289, 64, 64], [217, 485, 64, 64]],
+  left: [[308, 355, 64, 128], [440, 355, 64, 128], [506, 355, 64, 128], [374, 355, 64, 128], [308, 289, 64, 64], [308, 485, 64, 64]],
+};
+// Same order as PART_FILES. Shirts cover the torso and arms; pants the legs and the torso under the shirt.
+const PART_REGIONS: (Region | null)[] = [null, "torso", "left", "right", "left", "right"];
+
+function clothingGeometry(source: THREE.BufferGeometry, region: Region) {
+  const position = source.getAttribute("position");
+  const normal = source.getAttribute("normal");
+  source.computeBoundingBox();
+  const { min, max } = source.boundingBox!;
+  const size = new THREE.Vector3().subVectors(max, min).max(new THREE.Vector3(1e-6, 1e-6, 1e-6));
+  const rects = TEMPLATE[region];
+  const uv = new Float32Array(position.count * 2);
+  const clamp = (t: number) => Math.min(1, Math.max(0, t));
+
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
+    const nx = normal.getX(i), ny = normal.getY(i), nz = normal.getZ(i);
+    // Seen from the front, the character's right (-X here) is on the left of the picture.
+    const fromRight = (x - min.x) / size.x, fromLeft = (max.x - x) / size.x;
+    const up = (y - min.y) / size.y;
+    const fromFront = (max.z - z) / size.z, fromBack = (z - min.z) / size.z;
+
+    let side: number, u: number, v: number;
+    const ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz);
+    if (az >= ax && az >= ay) [side, u, v] = nz >= 0 ? [0, fromRight, up] : [1, fromLeft, up];
+    else if (ax >= ay) [side, u, v] = nx <= 0 ? [2, fromBack, up] : [3, fromFront, up];
+    else [side, u, v] = ny >= 0 ? [4, fromRight, fromFront] : [5, fromRight, fromBack];
+
+    const [rx, ry, rw, rh] = rects[side];
+    const px = rx + 0.5 + clamp(u) * (rw - 1);
+    const py = ry + 0.5 + (1 - clamp(v)) * (rh - 1);
+    uv[i * 2] = px / TEMPLATE_W;
+    uv[i * 2 + 1] = 1 - py / TEMPLATE_H;
+  }
+
+  const geometry = source.clone();
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  return geometry;
+}
+
+const clothingGeometries = new Map<string, THREE.BufferGeometry>();
+
+function clothingLayer(parts: THREE.Mesh[], key: string, region: Region, material: THREE.Material) {
+  const layer = new THREE.Group();
+  for (const mesh of parts) {
+    const cacheKey = `${key}|${mesh.geometry.uuid}|${region}`;
+    if (!clothingGeometries.has(cacheKey)) clothingGeometries.set(cacheKey, clothingGeometry(mesh.geometry, region));
+    const copy = new THREE.Mesh(clothingGeometries.get(cacheKey)!, material);
+    copy.position.copy(mesh.position);
+    copy.quaternion.copy(mesh.quaternion);
+    copy.scale.copy(mesh.scale);
+    layer.add(copy);
+  }
+  return layer;
+}
+
 type Build = { objects: THREE.Object3D[]; materials: THREE.Material[] };
 
 async function buildAvatar(data: PlayerData): Promise<Build> {
@@ -52,11 +122,45 @@ async function buildAvatar(data: PlayerData): Promise<Build> {
     return m;
   };
 
-  const [headSkin, bodySkin] = await Promise.all([loadTexture("/models/head-skin.png"), loadTexture("/models/body-skin.png")]);
+  const shirt = findShirt(data.shirt);
+  const pants = findPants(data.pants);
+  const [headSkin, bodySkin, shirtMap, pantsMap] = await Promise.all([
+    loadTexture("/models/head-skin.png"),
+    loadTexture("/models/body-skin.png"),
+    shirt ? loadTexture(shirt.template).catch(() => null) : null,
+    pants ? loadTexture(pants.template).catch(() => null) : null,
+  ]);
+  // Drawn over the skin, pants first; no mipmaps, so neighbouring template parts don't blur into each other.
+  const decal = (map: THREE.Texture | null, order: number) => {
+    if (!map) return null;
+    map.minFilter = THREE.LinearFilter;
+    map.generateMipmaps = false;
+    const m = new THREE.MeshStandardMaterial({
+      map,
+      transparent: true,
+      depthWrite: false,
+      roughness: 0.6,
+      polygonOffset: true,
+      polygonOffsetFactor: -order,
+      polygonOffsetUnits: -order,
+    });
+    materials.push(m);
+    return m;
+  };
+  const pantsMaterial = decal(pantsMap, 1);
+  const shirtMaterial = decal(shirtMap, 2);
+
   const jobs: Promise<THREE.Object3D | null>[] = PART_FILES.map(async (file, i) => {
-    const group = await loadModel(`/models/${data.bodyPartBundles[i]}/${file}.obj`);
+    const url = `/models/${data.bodyPartBundles[i]}/${file}.obj`;
+    const group = await loadModel(url);
     const material = skin(i === 0 ? headSkin : bodySkin, rgbaToHex(data.bodyColors[i]));
-    meshesOf(group).forEach((mesh) => (mesh.material = material));
+    const parts = meshesOf(group); // before any clothing layer is added
+    parts.forEach((mesh) => (mesh.material = material));
+
+    const region = PART_REGIONS[i];
+    const isTorso = i === 1, isArm = i === 2 || i === 3, isLeg = i === 4 || i === 5;
+    if (region && pantsMaterial && (isTorso || isLeg)) group.add(clothingLayer(parts, url, region, pantsMaterial));
+    if (region && shirtMaterial && (isTorso || isArm)) group.add(clothingLayer(parts, url, region, shirtMaterial));
     return group;
   });
 
