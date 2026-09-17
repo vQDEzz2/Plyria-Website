@@ -234,7 +234,9 @@ let headshotQueue: Promise<unknown> = Promise.resolve();
 const headshots = new Map<string, Promise<string>>();
 
 export function renderHeadshot(data: PlayerData, size = 150): Promise<string> {
-  const key = `${size}|${JSON.stringify([data.bodyPartBundles[0], data.bodyColors[0], data.face, data.hat, data.shirt])}`;
+  // Everything that can show in the picture: the shoulders and arms are in it too, not just the head.
+  const look = [data.bodyPartBundles, data.bodyColors, data.face, data.hat, data.shirt, data.pants];
+  const key = `${size}|${JSON.stringify(look)}`;
   if (headshots.has(key)) return headshots.get(key)!;
 
   const job = headshotQueue.then(async () => {
