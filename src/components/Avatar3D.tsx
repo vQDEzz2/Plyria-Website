@@ -61,37 +61,53 @@ const TEMPLATE: Record<Region, readonly Rect[]> = {
 const PART_REGIONS: (Region | null)[] = [null, "torso", "left", "right", "left", "right"];
 
 function clothingGeometry(source: THREE.BufferGeometry, region: Region) {
-  const position = source.getAttribute("position");
-  const normal = source.getAttribute("normal");
-  source.computeBoundingBox();
-  const { min, max } = source.boundingBox!;
+  // One set of corners per triangle, so a whole triangle maps into one template side (see below).
+  const geometry = source.index ? source.toNonIndexed() : source.clone();
+  const position = geometry.getAttribute("position");
+  const normal = geometry.getAttribute("normal");
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox!;
   const size = new THREE.Vector3().subVectors(max, min).max(new THREE.Vector3(1e-6, 1e-6, 1e-6));
   const rects = TEMPLATE[region];
   const uv = new Float32Array(position.count * 2);
   const clamp = (t: number) => Math.min(1, Math.max(0, t));
 
-  for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
-    const nx = normal.getX(i), ny = normal.getY(i), nz = normal.getZ(i);
-    // Seen from the front, the character's right (-X here) is on the left of the picture.
-    const fromRight = (x - min.x) / size.x, fromLeft = (max.x - x) / size.x;
-    const up = (y - min.y) / size.y;
-    const fromFront = (max.z - z) / size.z, fromBack = (z - min.z) / size.z;
-
-    let side: number, u: number, v: number;
+  for (let t = 0; t + 2 < position.count; t += 3) {
+    // The side the whole triangle faces. Picking it per corner would stretch triangles on the rounded edges
+    // across two template panels and show the skin through the transparent gap between them.
+    let nx = 0, ny = 0, nz = 0;
+    for (let k = 0; k < 3; k++) {
+      nx += normal.getX(t + k);
+      ny += normal.getY(t + k);
+      nz += normal.getZ(t + k);
+    }
     const ax = Math.abs(nx), ay = Math.abs(ny), az = Math.abs(nz);
-    if (az >= ax && az >= ay) [side, u, v] = nz >= 0 ? [0, fromRight, up] : [1, fromLeft, up];
-    else if (ax >= ay) [side, u, v] = nx <= 0 ? [2, fromBack, up] : [3, fromFront, up];
-    else [side, u, v] = ny >= 0 ? [4, fromRight, fromFront] : [5, fromRight, fromBack];
-
+    const side = az >= ax && az >= ay ? (nz >= 0 ? 0 : 1) : ax >= ay ? (nx <= 0 ? 2 : 3) : ny >= 0 ? 4 : 5;
     const [rx, ry, rw, rh] = rects[side];
-    const px = rx + 0.5 + clamp(u) * (rw - 1);
-    const py = ry + 0.5 + (1 - clamp(v)) * (rh - 1);
-    uv[i * 2] = px / TEMPLATE_W;
-    uv[i * 2 + 1] = 1 - py / TEMPLATE_H;
+
+    for (let k = 0; k < 3; k++) {
+      const i = t + k;
+      const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
+      // Seen from the front, the character's right (-X here) is on the left of the picture.
+      const fromRight = (x - min.x) / size.x, fromLeft = (max.x - x) / size.x;
+      const up = (y - min.y) / size.y;
+      const fromFront = (max.z - z) / size.z, fromBack = (z - min.z) / size.z;
+      const [u, v] = [
+        [fromRight, up],
+        [fromLeft, up],
+        [fromBack, up],
+        [fromFront, up],
+        [fromRight, fromFront],
+        [fromRight, fromBack],
+      ][side];
+      // One pixel inside the rectangle so the transparent gap around it is never sampled.
+      const px = rx + 1 + clamp(u) * (rw - 2);
+      const py = ry + 1 + (1 - clamp(v)) * (rh - 2);
+      uv[i * 2] = px / TEMPLATE_W;
+      uv[i * 2 + 1] = 1 - py / TEMPLATE_H;
+    }
   }
 
-  const geometry = source.clone();
   geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   return geometry;
 }
