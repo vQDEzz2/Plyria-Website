@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { findFace, findHat, findPants, findShirt, rgbaToHex, type PlayerData } from "@/lib/catalog";
+import { bundleForPart, findFace, findHat, findPants, findShirt, rgbaToHex, type PlayerData } from "@/lib/catalog";
 
 // 3D avatar made from the game's own models, exported from the Unity project into public/models:
 //   <bundle>/<part>.obj for each body part (same order as BODY_PARTS), <bundle>/face.obj (the face decal layer),
@@ -167,7 +167,7 @@ async function buildAvatar(data: PlayerData): Promise<Build> {
   const shirtMaterial = decal(shirtMap, 2);
 
   const jobs: Promise<THREE.Object3D | null>[] = PART_FILES.map(async (file, i) => {
-    const url = `/models/${data.bodyPartBundles[i]}/${file}.obj`;
+    const url = `/models/${bundleForPart(data, i).id}/${file}.obj`;
     const group = await loadModel(url);
     const material = skin(i === 0 ? headSkin : bodySkin, rgbaToHex(data.bodyColors[i]));
     const parts = meshesOf(group); // before any clothing layer is added
@@ -183,7 +183,7 @@ async function buildAvatar(data: PlayerData): Promise<Build> {
   jobs.push(
     (async () => {
       const face = findFace(data.face);
-      const [group, map] = await Promise.all([loadModel(`/models/${data.bodyPartBundles[0]}/face.obj`), loadTexture(face.image)]);
+      const [group, map] = await Promise.all([loadModel(`/models/${bundleForPart(data, 0).id}/face.obj`), loadTexture(face.image)]);
       // Drawn on a copy of the head's front, pulled slightly toward the camera so it never flickers into the head.
       const material = new THREE.MeshStandardMaterial({
         map,

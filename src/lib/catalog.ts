@@ -8,7 +8,9 @@ export type ItemType = "color" | "face" | "hat" | "bundle" | "shirt" | "pants";
 export type ColorItem = { id: string; name: string; hex: string; price: number };
 export type FaceItem = { id: string; name: string; price: number; starter?: boolean; image: string };
 export type HatItem = { id: string; name: string; price: number; image: string };
-export type BundleItem = { id: string; name: string; price: number; starter?: boolean; image?: string };
+// A bundle of body parts. parts lists which of BODY_PARTS it provides, by index; leave it out for a whole
+// body. A bundle that only provides some parts (a head on its own, say) leaves the rest as they are.
+export type BundleItem = { id: string; name: string; price: number; starter?: boolean; image?: string; parts?: number[] };
 // A classic shirt or pants: a 585x559 Roblox template PNG (template) and a flat front view for tiles (image).
 export type ClothingItem = { id: string; name: string; price: number; starter?: boolean; template: string; image: string };
 
@@ -137,7 +139,21 @@ export const PANTS: ClothingItem[] = [
 export const BUNDLES: BundleItem[] = [
   { id: "classic", name: "Classic", price: 0, starter: true },
   { id: "female", name: "Female", price: 0, image: "/images/bundle-female.png" },
+  { id: "wedge-head", name: "Wedge Head", price: 65, image: "/images/bundle-wedge-head.png", parts: [0] },
 ];
+
+// True when this bundle has a mesh for that body part.
+export const bundleHasPart = (b: BundleItem, part: number) => !b.parts || b.parts.includes(part);
+
+// Bundles that can be worn on a body part, so a head-only bundle only shows up under Head.
+export const bundlesForPart = (part: number) => BUNDLES.filter((b) => bundleHasPart(b, part));
+
+// The bundle a body part is actually wearing. Anything that does not provide the part falls back to Classic,
+// which is what the game does when a bundle has no mesh for it.
+export function bundleForPart(d: PlayerData, part: number) {
+  const chosen = findBundle(d.bodyPartBundles[part]);
+  return bundleHasPart(chosen, part) ? chosen : BUNDLES[0];
+}
 
 // Same as PlayerData.ItemId in Unity: "face" + "sad-cursed-eyes" is "face_sad_cursed_eyes".
 export function itemId(type: ItemType, id: string) {

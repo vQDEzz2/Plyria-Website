@@ -9,7 +9,6 @@ import { Modal, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import {
   BODY_PARTS,
-  BUNDLES,
   COLORS,
   FACES,
   HATS,
@@ -20,6 +19,8 @@ import {
   findHat,
   findPants,
   findShirt,
+  bundleHasPart,
+  bundlesForPart,
   hexToRgba,
   ownsBundle,
   ownsColor,
@@ -27,6 +28,7 @@ import {
   ownsHat,
   ownsPants,
   ownsShirt,
+  type BundleItem,
   type ClothingItem,
   type PlayerData,
 } from "@/lib/catalog";
@@ -38,6 +40,7 @@ export default function AvatarPage() {
   const { data, save } = usePlayer();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Body Colors");
   const [selected, setSelected] = useState<number[]>(ALL_PARTS);
+  const [bodyPart, setBodyPart] = useState<number | "all">("all");
   const [dialog, setDialog] = useState<Dialog | null>(null);
 
   function update(change: (next: PlayerData) => void) {
@@ -48,7 +51,23 @@ export default function AvatarPage() {
 
   const bundleIds = new Set(data.bodyPartBundles);
   const hat = findHat(data.hat);
-  const ownedBundles = BUNDLES.filter((b) => ownsBundle(data, b));
+
+  // Which bundles can go on the part being edited, and whether one is already on.
+  const partsShown = bodyPart === "all" ? ALL_PARTS : [bodyPart];
+  const choices = (bodyPart === "all" ? BODY_PARTS.map((_, i) => i) : [bodyPart])
+    .map((i) => bundlesForPart(i))
+    .reduce<BundleItem[]>((all, list) => all.concat(list.filter((b) => !all.includes(b))), [])
+    .filter((b) => ownsBundle(data, b));
+
+  const wearing = (bundle: BundleItem) =>
+    partsShown.every((i) => !bundleHasPart(bundle, i) || data.bodyPartBundles[i] === bundle.id) &&
+    partsShown.some((i) => data.bodyPartBundles[i] === bundle.id);
+
+  // Wearing a bundle only changes the parts it actually has, so a head keeps the body it is on.
+  const wear = (bundle: BundleItem) =>
+    update((next) => partsShown.forEach((i) => {
+      if (bundleHasPart(bundle, i)) next.bodyPartBundles[i] = bundle.id;
+    }));
 
   return (
     <>
@@ -130,51 +149,46 @@ export default function AvatarPage() {
 
             {tab === "Body Parts" && (
               <>
-                <p className="muted">Wear a whole bundle, or mix body parts from bundles you own. Shapes show in the game.</p>
-                <div className="mt-2 overflow-x-auto border border-[#dddddd]">
-                  <table className="text-sm">
-                    <thead>
-                      <tr className="bg-[#f5f5f5]">
-                        <th className="w-[120px] px-2 py-1.5 text-left">Body Part</th>
-                        {ownedBundles.map((b) => (
-                          <th key={b.id} className="px-2 py-1.5 text-[13px] text-[#555555]">
-                            {b.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-t border-[#eeeeee]">
-                        <td className="px-2 py-1.5 font-bold">All Parts</td>
-                        {ownedBundles.map((b) => (
-                          <td key={b.id} className="px-2 py-1.5">
-                            <button
-                              className={`btn w-[120px] ${data.bodyPartBundles.every((id) => id === b.id) ? "btn-on" : ""}`}
-                              onClick={() => update((next) => (next.bodyPartBundles = BODY_PARTS.map(() => b.id)))}
-                            >
-                              Wear All
-                            </button>
-                          </td>
-                        ))}
-                      </tr>
-                      {BODY_PARTS.map((part, i) => (
-                        <tr key={part} className="border-t border-[#eeeeee]">
-                          <td className="px-2 py-1.5 font-bold">{part}</td>
-                          {ownedBundles.map((b) => (
-                            <td key={b.id} className="px-2 py-1.5">
-                              <button
-                                className={`btn w-[120px] ${data.bodyPartBundles[i] === b.id ? "btn-on" : ""}`}
-                                onClick={() => update((next) => (next.bodyPartBundles[i] = b.id))}
-                              >
-                                {b.name}
-                              </button>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <p className="muted">Pick a body part, then pick the shape to wear on it. Shapes show in the game.</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {(["all", ...ALL_PARTS] as const).map((part) => (
+                    <button
+                      key={part}
+                      aria-pressed={bodyPart === part}
+                      onClick={() => setBodyPart(part)}
+                      className={`rounded-[3px] border px-3 py-1.5 text-[13px] font-bold ${
+                        bodyPart === part
+                          ? "border-brand bg-brand text-white"
+                          : "border-[#cccccc] bg-white text-[#444444] transition-colors hover:border-brand hover:text-brand"
+                      }`}
+                    >
+                      {part === "all" ? "Whole Body" : BODY_PARTS[part]}
+                    </button>
+                  ))}
                 </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {choices.map((b) => (
+                    <Tile key={b.id} name={b.name} on={wearing(b)} onClick={() => wear(b)}>
+                      {b.image ? (
+                        <Image src={b.image} alt="" width={84} height={84} className="h-[84px] w-[84px] object-contain" />
+                      ) : (
+                        <span className="text-2xl text-[#999999]">&#8709;</span>
+                      )}
+                    </Tile>
+                  ))}
+                </div>
+
+                <p className="muted mt-3">
+                  {bodyPart === "all"
+                    ? `Wearing: ${bundleIds.size === 1 ? findBundle(data.bodyPartBundles[0]).name : BODY_PARTS.map((name, i) => `${name} ${findBundle(data.bodyPartBundles[i]).name}`).join(", ")}`
+                    : `${BODY_PARTS[bodyPart]}: ${findBundle(data.bodyPartBundles[bodyPart]).name}`}
+                </p>
+                {choices.length < 2 && (
+                  <Link href="/marketplace" className="link mt-1 inline-block">
+                    Find more body shapes in the Marketplace.
+                  </Link>
+                )}
               </>
             )}
 

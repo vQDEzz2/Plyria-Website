@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Modal, PriceTag, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import {
   BUNDLES,
@@ -17,42 +18,119 @@ import {
   ownsPants,
   ownsShirt,
   type ItemType,
+  type PlayerData,
 } from "@/lib/catalog";
 import { purchase } from "@/lib/playfab";
-import { Modal, PriceTag, type Dialog } from "@/components/ui";
 
-function ItemCard({
-  title,
-  owned,
-  price,
-  onClick,
-  children,
-}: {
-  title: string;
-  owned: boolean;
+// One row of the catalog: everything the grid and the buy dialog need, whatever kind of item it is.
+type CatalogEntry = {
+  type: ItemType;
+  id: string;
+  name: string;
   price: number;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button className="card" onClick={onClick}>
-      <div className="flex h-[156px] w-[156px] items-center justify-center overflow-hidden border border-[#999999] bg-[#dddddd]">
-        {children}
-      </div>
-      <div className="card-title">{title}</div>
-      {owned ? <span className="text-sm font-bold text-money">Owned</span> : <PriceTag amount={price} />}
-    </button>
-  );
+  image?: string;
+  category: string;
+  owned: boolean;
+  fit: "cover" | "contain";
+};
+
+const CATEGORIES = ["All", "Bundles", "Shirts", "Pants", "Hats", "Faces"] as const;
+type Category = (typeof CATEGORIES)[number];
+
+const SORTS = ["Price: Low to High", "Price: High to Low", "Name"] as const;
+type Sort = (typeof SORTS)[number];
+
+// Everything on sale, in one list. Starter items are left out: every avatar already has them.
+function buildCatalog(data: PlayerData): CatalogEntry[] {
+  return [
+    ...BUNDLES.filter((b) => !b.starter).map((b) => ({
+      type: "bundle" as const,
+      id: b.id,
+      name: b.name,
+      price: b.price,
+      image: b.image,
+      category: "Bundles",
+      owned: ownsBundle(data, b),
+      fit: "cover" as const,
+    })),
+    ...SHIRTS.filter((s) => !s.starter).map((s) => ({
+      type: "shirt" as const,
+      id: s.id,
+      name: s.name,
+      price: s.price,
+      image: s.image,
+      category: "Shirts",
+      owned: ownsShirt(data, s),
+      fit: "contain" as const,
+    })),
+    ...PANTS.filter((p) => !p.starter).map((p) => ({
+      type: "pants" as const,
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      category: "Pants",
+      owned: ownsPants(data, p),
+      fit: "contain" as const,
+    })),
+    ...HATS.map((h) => ({
+      type: "hat" as const,
+      id: h.id,
+      name: h.name,
+      price: h.price,
+      image: h.image,
+      category: "Hats",
+      owned: ownsHat(data, h),
+      fit: "contain" as const,
+    })),
+    ...FACES.filter((f) => !f.starter).map((f) => ({
+      type: "face" as const,
+      id: f.id,
+      name: f.name,
+      price: f.price,
+      image: f.image,
+      category: "Faces",
+      owned: ownsFace(data, f),
+      fit: "contain" as const,
+    })),
+  ];
 }
 
 export default function MarketplacePage() {
   const { data, save, refresh } = usePlayer();
   const router = useRouter();
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [category, setCategory] = useState<Category>("All");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<Sort>("Price: Low to High");
+  const [ownedOnly, setOwnedOnly] = useState(false);
+
   const close = () => setDialog(null);
   const toAvatar = { label: "Go to Avatar", primary: true, onClick: () => router.push("/avatar") };
 
-  async function confirm(key: string, name: string, price: number) {
+  const catalog = useMemo(() => buildCatalog(data), [data]);
+
+  const shown = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const list = catalog.filter(
+      (item) =>
+        (category === "All" || item.category === category) &&
+        (!ownedOnly || item.owned) &&
+        (query === "" || item.name.toLowerCase().includes(query)),
+    );
+    const byName = (a: CatalogEntry, b: CatalogEntry) => a.name.localeCompare(b.name);
+    const order =
+      sort === "Name"
+        ? byName
+        : sort === "Price: High to Low"
+          ? (a: CatalogEntry, b: CatalogEntry) => b.price - a.price || byName(a, b)
+          : (a: CatalogEntry, b: CatalogEntry) => a.price - b.price || byName(a, b);
+    return [...list].sort(order);
+  }, [catalog, category, ownedOnly, search, sort]);
+
+  const countIn = (name: Category) => (name === "All" ? catalog.length : catalog.filter((i) => i.category === name).length);
+
+  async function complete(key: string, name: string, price: number) {
     setDialog({ title: "Buying...", message: `Buying ${name}...`, actions: [] });
     try {
       // Free items are just added to your saved items; paid ones go through PlayFab, which takes the Plyrium.
@@ -72,100 +150,125 @@ export default function MarketplacePage() {
     }
   }
 
-  function buy(type: ItemType, id: string, name: string, price: number, owned: boolean) {
-    const key = itemId(type, id);
-    if (owned) {
-      return setDialog({ title: name, message: "You already own this.", actions: [{ label: "Close", onClick: close }, toAvatar] });
+  function buy(item: CatalogEntry) {
+    const key = itemId(item.type, item.id);
+    if (item.owned) {
+      return setDialog({
+        title: item.name,
+        message: "You already own this.",
+        actions: [{ label: "Close", onClick: close }, toAvatar],
+      });
     }
-    if (data.plyrium < price) {
+    if (data.plyrium < item.price) {
       return setDialog({
         title: "Insufficient Plyrium",
-        message: `You need ${(price - data.plyrium).toLocaleString()} more Plyrium to buy ${name}.`,
+        message: `You need ${(item.price - data.plyrium).toLocaleString()} more Plyrium to buy ${item.name}.`,
         actions: [
           { label: "Cancel", onClick: close },
           { label: "Get Plyrium", primary: true, onClick: () => router.push("/plyrium") },
         ],
       });
     }
-    const free = price === 0;
+    const free = item.price === 0;
     setDialog({
       title: free ? "Get Item" : "Buy Item",
-      message: free ? `Would you like to get ${name} for free?` : `Would you like to buy ${name} for ${price.toLocaleString()} Plyrium?`,
+      message: free
+        ? `Would you like to get ${item.name} for free?`
+        : `Would you like to buy ${item.name} for ${item.price.toLocaleString()} Plyrium?`,
       actions: [
         { label: "Cancel", onClick: close },
-        { label: free ? "Get Now" : "Buy Now", primary: true, onClick: () => confirm(key, name, price) },
+        { label: free ? "Get Now" : "Buy Now", primary: true, onClick: () => complete(key, item.name, item.price) },
       ],
     });
   }
 
   return (
     <>
-      <h1 className="h1">Marketplace</h1>
-      <p className="muted">Find your next look. Equip your items in the Avatar Editor.</p>
-      <nav className="category-nav" aria-label="Marketplace categories">
-        {["Bundles", "Shirts", "Pants", "Hats", "Faces"].map((category) => (
-          <a key={category} href={`#${category.toLowerCase()}`}>{category}</a>
-        ))}
-      </nav>
-
-      <h2 id="bundles" className="h2">Bundles</h2>
-      <div className="flex flex-wrap gap-3">
-        {BUNDLES.filter((b) => !b.starter).map((b) => {
-          const owned = ownsBundle(data, b);
-          return (
-            <ItemCard key={b.id} title={`${b.name} Bundle`} owned={owned} price={b.price} onClick={() => buy("bundle", b.id, `${b.name} Bundle`, b.price, owned)}>
-              {b.image && <Image src={b.image} alt="" width={156} height={156} className="h-full w-full object-cover" />}
-            </ItemCard>
-          );
-        })}
+      <div className="flex flex-wrap items-baseline gap-2">
+        <h1 className="h1">Marketplace</h1>
+        <div className="flex-1" />
+        <PriceTag amount={data.plyrium} />
       </div>
+      <p className="muted">Find your next look. Wear what you own in the Avatar Editor.</p>
 
-      <h2 id="shirts" className="h2">Shirts</h2>
-      <div className="flex flex-wrap gap-3">
-        {SHIRTS.filter((s) => !s.starter).map((s) => {
-          const owned = ownsShirt(data, s);
-          return (
-            <ItemCard key={s.id} title={s.name} owned={owned} price={s.price} onClick={() => buy("shirt", s.id, s.name, s.price, owned)}>
-              <Image src={s.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
-            </ItemCard>
-          );
-        })}
-      </div>
+      <div className="mt-3 flex flex-col gap-4 md:flex-row">
+        {/* Categories down the side, like the aisles of a shop. */}
+        <nav aria-label="Categories" className="md:w-[170px] md:shrink-0">
+          <div className="flex flex-wrap gap-1 md:flex-col">
+            {CATEGORIES.map((name) => (
+              <button
+                key={name}
+                aria-pressed={category === name}
+                onClick={() => setCategory(name)}
+                className={`flex items-center justify-between gap-2 rounded-[3px] border px-3 py-1.5 text-[13px] font-bold md:w-full ${
+                  category === name
+                    ? "border-brand bg-brand text-white"
+                    : "border-[#d3c9e0] bg-white text-[#444444] transition-colors hover:border-brand hover:text-brand"
+                }`}
+              >
+                <span>{name}</span>
+                <span className={category === name ? "text-white/70" : "text-[#999999]"}>{countIn(name)}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
 
-      <h2 id="pants" className="h2">Pants</h2>
-      <div className="flex flex-wrap gap-3">
-        {PANTS.filter((p) => !p.starter).map((p) => {
-          const owned = ownsPants(data, p);
-          return (
-            <ItemCard key={p.id} title={p.name} owned={owned} price={p.price} onClick={() => buy("pants", p.id, p.name, p.price, owned)}>
-              <Image src={p.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
-            </ItemCard>
-          );
-        })}
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-[#ddd2ea] pb-3">
+            <input
+              className="field max-w-[240px]"
+              placeholder="Search the Marketplace"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search the Marketplace"
+            />
+            <select
+              className="field max-w-[190px]"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              aria-label="Sort by"
+            >
+              {SORTS.map((name) => (
+                <option key={name}>{name}</option>
+              ))}
+            </select>
+            <label className="flex items-center gap-1.5 text-sm text-[#555555]">
+              <input type="checkbox" checked={ownedOnly} onChange={(e) => setOwnedOnly(e.target.checked)} />
+              Only what I own
+            </label>
+            <div className="flex-1" />
+            <span className="muted">{shown.length} items</span>
+          </div>
 
-      <h2 id="hats" className="h2">Hats</h2>
-      <div className="flex flex-wrap gap-3">
-        {HATS.map((h) => {
-          const owned = ownsHat(data, h);
-          return (
-            <ItemCard key={h.id} title={h.name} owned={owned} price={h.price} onClick={() => buy("hat", h.id, h.name, h.price, owned)}>
-              <Image src={h.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
-            </ItemCard>
-          );
-        })}
-      </div>
-
-      <h2 id="faces" className="h2">Faces</h2>
-      <div className="flex flex-wrap gap-3">
-        {FACES.filter((f) => !f.starter).map((f) => {
-          const owned = ownsFace(data, f);
-          return (
-            <ItemCard key={f.id} title={f.name} owned={owned} price={f.price} onClick={() => buy("face", f.id, f.name, f.price, owned)}>
-              <Image src={f.image} alt="" width={140} height={140} className="h-[140px] w-[140px] object-contain" />
-            </ItemCard>
-          );
-        })}
+          {shown.length === 0 ? (
+            <p className="muted">Nothing here matches. Try another category or search.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {shown.map((item) => (
+                <button key={`${item.type}_${item.id}`} className="card w-full" onClick={() => buy(item)}>
+                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[2px] border border-[#d3c9e0] bg-[#f3f0f8]">
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt=""
+                        width={220}
+                        height={220}
+                        className={`card-thumb h-full w-full ${item.fit === "cover" ? "object-cover" : "object-contain p-2"}`}
+                      />
+                    ) : (
+                      <span className="text-2xl text-[#bbbbbb]">&#8709;</span>
+                    )}
+                  </div>
+                  <div className="card-title truncate">{item.name}</div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] text-[#888888]">{item.category.replace(/s$/, "")}</span>
+                    {item.owned ? <span className="text-sm font-bold text-money">Owned</span> : <PriceTag amount={item.price} />}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <Modal dialog={dialog} onClose={close} />
