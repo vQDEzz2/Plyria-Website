@@ -101,9 +101,14 @@ export default function MarketplacePage() {
   return (
     <>
       <h1 className="h1">Marketplace</h1>
-      <p className="muted">Bundles, clothing, hats and faces for your avatar. Body colors are free in the Avatar editor. Get them here, then wear them in the Avatar editor.</p>
+      <p className="muted">Find your next look. Equip your items in the Avatar Editor.</p>
+      <nav className="category-nav" aria-label="Marketplace categories">
+        {["Bundles", "Shirts", "Pants", "Hats", "Faces"].map((category) => (
+          <a key={category} href={`#${category.toLowerCase()}`}>{category}</a>
+        ))}
+      </nav>
 
-      <h2 className="h2">Bundles</h2>
+      <h2 id="bundles" className="h2">Bundles</h2>
       <div className="flex flex-wrap gap-3">
         {BUNDLES.filter((b) => !b.starter).map((b) => {
           const owned = ownsBundle(data, b);
@@ -115,7 +120,7 @@ export default function MarketplacePage() {
         })}
       </div>
 
-      <h2 className="h2">Shirts</h2>
+      <h2 id="shirts" className="h2">Shirts</h2>
       <div className="flex flex-wrap gap-3">
         {SHIRTS.filter((s) => !s.starter).map((s) => {
           const owned = ownsShirt(data, s);
@@ -127,7 +132,7 @@ export default function MarketplacePage() {
         })}
       </div>
 
-      <h2 className="h2">Pants</h2>
+      <h2 id="pants" className="h2">Pants</h2>
       <div className="flex flex-wrap gap-3">
         {PANTS.filter((p) => !p.starter).map((p) => {
           const owned = ownsPants(data, p);
@@ -139,7 +144,7 @@ export default function MarketplacePage() {
         })}
       </div>
 
-      <h2 className="h2">Hats</h2>
+      <h2 id="hats" className="h2">Hats</h2>
       <div className="flex flex-wrap gap-3">
         {HATS.map((h) => {
           const owned = ownsHat(data, h);
@@ -151,7 +156,7 @@ export default function MarketplacePage() {
         })}
       </div>
 
-      <h2 className="h2">Faces</h2>
+      <h2 id="faces" className="h2">Faces</h2>
       <div className="flex flex-wrap gap-3">
         {FACES.filter((f) => !f.starter).map((f) => {
           const owned = ownsFace(data, f);

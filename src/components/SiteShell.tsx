@@ -18,6 +18,16 @@ const NAV = [
   { href: "/friends", label: "Friends" },
 ];
 
+const ICONS: Record<string, string> = {
+  Home: "M3 10 12 3l9 7v11h-6v-7H9v7H3Z",
+  Games: "M7 6h10l4 12-3 2-4-4h-4l-4 4-3-2ZM6 11h6m-3-3v6m7-3h2",
+  Create: "M12 3v18M3 12h18",
+  Marketplace: "M4 9h16l-1 12H5ZM8 9V6a4 4 0 0 1 8 0v3",
+  "Earn Plyrium": "m12 2 9 10-9 10L3 12Zm0 5 4 5-4 5-4-5Z",
+  Avatar: "M8 5a4 4 0 1 0 8 0 4 4 0 0 0-8 0ZM4 22v-5a8 8 0 0 1 16 0v5",
+  Friends: "M3 21v-4a6 6 0 0 1 12 0v4m3-10a5 5 0 0 1 4 5v5M5 5a4 4 0 1 0 8 0 4 4 0 0 0-8 0m11-3a4 4 0 0 1 0 7",
+};
+
 // Classic spinning logo while loading, like the old game loading screens. If loading drags on, offers a way out.
 export function LoadingScreen({ onLogOut }: { onLogOut?: () => void }) {
   const [slow, setSlow] = useState(false);
@@ -55,11 +65,17 @@ export function ShellFrame({
 }) {
   const pathname = usePathname();
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="site-header flex h-16 items-center gap-3 px-4 sm:px-10">
+    <div className="site-layout">
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <header className="site-header app-header">
         <Link href="/" aria-label="Plyria home" className="transition-transform duration-200 hover:-rotate-2 hover:scale-105">
           <Image src="/images/title.png" alt="Plyria" width={130} height={52} priority />
         </Link>
+        <nav aria-label="Explore" className="header-explore">
+          <Link href="/games">Games</Link>
+          <Link href="/marketplace">Marketplace</Link>
+          <Link href="/create">Create</Link>
+        </nav>
         <div className="flex-1" />
         <Link href={`/users/${userId}`} className="hidden text-sm font-bold text-white hover:underline sm:block">
           Hi, {displayName}
@@ -76,24 +92,32 @@ export function ShellFrame({
         </Link>
       </header>
 
-      <nav className="site-nav flex overflow-x-auto px-4 sm:px-10">
+      <aside className="app-sidebar">
+        <Link href={`/users/${userId}`} className="sidebar-profile">
+          <span className="profile-initial" aria-hidden="true">{displayName.slice(0, 1).toUpperCase()}</span>
+          <span className="min-w-0"><strong className="block truncate">{displayName}</strong><span className="muted">View profile</span></span>
+        </Link>
+      <nav aria-label="Main navigation" className="sidebar-nav">
         {NAV.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href} className={`nav-link ${active ? "nav-link-active" : ""}`}>
+            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`sidebar-link ${active ? "sidebar-link-active" : ""}`}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS[item.label]} /></svg>
               {item.label}
             </Link>
           );
         })}
       </nav>
+        <div className="sidebar-bottom"><Link href="/download" className="btn btn-primary w-full">Download Plyria</Link><p className="muted mt-2 text-center">Build. Play. Make friends.</p></div>
+      </aside>
 
-      <main className="mx-auto mt-5 w-full max-w-[1100px] px-4 sm:px-0">
+      <main id="main-content" tabIndex={-1} className="app-main">
         {/* Keyed by page, so each page fades in when you navigate. */}
-        <div key={pathname} className="content-box">
+        <div key={pathname} className="content-box app-content">
           {children}
         </div>
       </main>
-      <footer className="my-6 text-center text-xs text-[#6f6680]">Plyria | Prototype build | Not affiliated with Roblox</footer>
+      <footer className="app-footer">Plyria | Prototype build | Not affiliated with Roblox</footer>
     </div>
   );
 }

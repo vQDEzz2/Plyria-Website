@@ -21,10 +21,16 @@ export default function HomePage() {
 
   return (
     <>
-      <h1 className="h1">Hello, {displayName}!</h1>
+      <div className="welcome-strip">
+        <h1 className="h1">Home</h1>
+        <p className="text-lg font-bold">Hello, {displayName}!</p>
+        <p className="muted mt-1">Find a game, catch up with friends, or create something new.</p>
+      </div>
+      <div className="home-columns">
+      <div className="min-w-0">
 
-      <div className="flex items-end justify-between">
-        <h2 className="h2">Friends {friends ? `(${friends.length})` : ""}</h2>
+      <div className="section-heading !mt-0">
+        <h2>Friends {friends ? `(${friends.length})` : ""}</h2>
         <Link href="/friends" className="text-sm font-bold text-link hover:underline">
           See all
         </Link>
@@ -35,21 +41,32 @@ export default function HomePage() {
         <FriendList friends={friends} empty="You haven't added any friends yet. Add some on the Friends page." max={8} />
       )}
 
-      <h2 className="h2">Recommended For You</h2>
+      <div className="section-heading"><h2>Explore Games</h2><Link href="/games" className="link text-sm">See all</Link></div>
       <div className="flex flex-wrap gap-3">
         {GAMES.map((game) => (
           <GameCard key={game.id} game={game} />
         ))}
       </div>
 
-      <h2 className="h2">Your Avatar</h2>
+      <div className="mt-6 border-t border-[#e5e5ea] pt-5">
+        <h2 className="mb-2 text-lg font-bold">Make something of your own</h2>
+        <p className="muted mb-3">Build a place in Plyria Studio and share it with your friends.</p>
+        <Link href="/create" className="btn">Open Create</Link>
+      </div>
+      </div>
+      <aside className="home-avatar" aria-label="Your avatar">
+      <h2>Your Avatar</h2>
       <Link
         href="/avatar"
-        className="flex h-[200px] w-[150px] items-center justify-center border border-[#999999] bg-white hover:border-brand"
+        className="mx-auto mb-4 flex h-[200px] w-[150px] items-center justify-center border border-[#dedbe3] bg-white hover:border-brand"
         aria-label="Edit your avatar"
       >
         <Avatar3D data={data} width={148} height={198} />
       </Link>
+      <Link href="/avatar" className="btn btn-primary w-full">Customize Avatar</Link>
+      <Link href="/marketplace" className="link mt-3 block text-sm">Browse Marketplace</Link>
+      </aside>
+      </div>
     </>
   );
 }

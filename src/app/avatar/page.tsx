@@ -60,8 +60,8 @@ export default function AvatarPage() {
         </Link>
       </div>
 
-      <div className="mt-1.5 flex flex-col gap-5 md:flex-row">
-        <div className="md:w-[300px]">
+      <div className="mt-4 flex flex-col gap-6 xl:flex-row">
+        <div className="w-full max-w-[300px] shrink-0 xl:sticky xl:top-[88px] xl:self-start">
           <div className="relative flex justify-center border border-[#999999] bg-white">
             <Avatar3D data={data} width={298} height={360} />
             <span className="pointer-events-none absolute bottom-1.5 text-xs text-[#777777]">Drag to turn</span>
@@ -83,11 +83,12 @@ export default function AvatarPage() {
           </div>
         </div>
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-0.5">
             {TABS.map((t) => (
               <button
                 key={t}
+                aria-pressed={tab === t}
                 onClick={() => setTab(t)}
                 className={`rounded-t border border-b-0 border-[#cccccc] px-4 py-[7px] text-sm font-bold ${
                   tab === t ? "bg-white text-brand" : "bg-[#ebe5f2] text-[#444444] transition-colors hover:bg-brand-50"
