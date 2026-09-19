@@ -21,24 +21,26 @@ function avatarOf(playFabId: string) {
   return avatars.get(playFabId)!;
 }
 
-export default function AvatarHeadshot({ playFabId, name, size }: { playFabId: string; name: string; size: number }) {
+export default function AvatarHeadshot({ playFabId, name, size, data }: { playFabId?: string; name: string; size: number; data?: PlayerData }) {
   const [src, setSrc] = useState<{ id: string; url: string } | null>(null);
+  const appearance = data ? JSON.stringify(data) : null;
+  const identity = appearance ?? playFabId ?? "";
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const data = await avatarOf(playFabId);
-      if (!data || cancelled) return;
+      const avatar = appearance ? JSON.parse(appearance) as PlayerData : playFabId ? await avatarOf(playFabId) : null;
+      if (!avatar || cancelled) return;
       const { renderHeadshot } = await import("./Avatar3D"); // three.js loads only when a headshot is needed
-      const url = await renderHeadshot(data, size);
-      if (!cancelled) setSrc({ id: playFabId, url });
+      const url = await renderHeadshot(avatar, size);
+      if (!cancelled) setSrc({ id: identity, url });
     })().catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [playFabId, size]);
+  }, [appearance, identity, playFabId, size]);
 
-  const url = src?.id === playFabId ? src.url : null;
+  const url = src?.id === identity ? src.url : null;
   return (
     <div
       className="flex shrink-0 items-center justify-center overflow-hidden bg-[#e9e4f0] font-bold text-[#8a7fa0]"

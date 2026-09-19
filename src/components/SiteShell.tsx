@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAccount } from "@/lib/account";
+import AvatarHeadshot from "@/components/AvatarHeadshot";
+import type { PlayerData } from "@/lib/catalog";
 
 const AUTH_PAGES = ["/login", "/signup", "/forgot"];
 const PUBLIC_PAGES = ["/download"]; // open to everyone, logged in or not
@@ -56,11 +58,13 @@ export function ShellFrame({
   displayName,
   userId,
   plyrium,
+  avatarData,
   children,
 }: {
   displayName: string;
   userId: string;
   plyrium: number;
+  avatarData?: PlayerData;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -71,14 +75,9 @@ export function ShellFrame({
         <Link href="/" aria-label="Plyria home" className="transition-transform duration-200 hover:-rotate-2 hover:scale-105">
           <Image src="/images/title.png" alt="Plyria" width={130} height={52} priority />
         </Link>
-        <nav aria-label="Explore" className="header-explore">
-          <Link href="/games">Games</Link>
-          <Link href="/marketplace">Marketplace</Link>
-          <Link href="/create">Create</Link>
-        </nav>
         <div className="flex-1" />
-        <Link href={`/users/${userId}`} className="hidden text-sm font-bold text-white hover:underline sm:block">
-          Hi, {displayName}
+        <Link href={`/users/${userId}`} className="md:hidden" aria-label="Your profile">
+          <AvatarHeadshot data={avatarData} name={displayName} size={28} />
         </Link>
         <Link href="/plyrium" className="header-pill">
           <Image src="/images/plyrium.png" alt="Plyrium" width={20} height={20} />
@@ -94,7 +93,7 @@ export function ShellFrame({
 
       <aside className="app-sidebar">
         <Link href={`/users/${userId}`} className="sidebar-profile">
-          <span className="profile-initial" aria-hidden="true">{displayName.slice(0, 1).toUpperCase()}</span>
+          <AvatarHeadshot data={avatarData} name={displayName} size={44} />
           <span className="min-w-0"><strong className="block truncate">{displayName}</strong><span className="muted">View profile</span></span>
         </Link>
       <nav aria-label="Main navigation" className="sidebar-nav">
@@ -108,7 +107,6 @@ export function ShellFrame({
           );
         })}
       </nav>
-        <div className="sidebar-bottom"><Link href="/download" className="btn btn-primary w-full">Download Plyria</Link><p className="muted mt-2 text-center">Build. Play. Make friends.</p></div>
       </aside>
 
       <main id="main-content" tabIndex={-1} className="app-main">
@@ -158,7 +156,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
   if (!account.ready || !account.session || (!account.data && !account.error)) return <LoadingScreen onLogOut={logOutAndRetry} />;
 
   return (
-    <ShellFrame displayName={account.displayName} userId={account.userId} plyrium={account.data?.plyrium ?? 0}>
+    <ShellFrame displayName={account.displayName} userId={account.userId} plyrium={account.data?.plyrium ?? 0} avatarData={account.data ?? undefined}>
       {account.error ? (
         <div>
           <h1 className="h1">Something went wrong</h1>

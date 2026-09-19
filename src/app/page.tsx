@@ -24,7 +24,6 @@ export default function HomePage() {
       <div className="welcome-strip">
         <h1 className="h1">Home</h1>
         <p className="text-lg font-bold">Hello, {displayName}!</p>
-        <p className="muted mt-1">Find a game, catch up with friends, or create something new.</p>
       </div>
       <div className="home-columns">
       <div className="min-w-0">
@@ -32,7 +31,7 @@ export default function HomePage() {
       <div className="section-heading !mt-0">
         <h2>Friends {friends ? `(${friends.length})` : ""}</h2>
         <Link href="/friends" className="text-sm font-bold text-link hover:underline">
-          See all
+          {friends?.length === 0 ? "Add friends" : "See all"}
         </Link>
       </div>
       {friends === null ? (
@@ -48,11 +47,6 @@ export default function HomePage() {
         ))}
       </div>
 
-      <div className="mt-6 border-t border-[#e5e5ea] pt-5">
-        <h2 className="mb-2 text-lg font-bold">Make something of your own</h2>
-        <p className="muted mb-3">Build a place in Plyria Studio and share it with your friends.</p>
-        <Link href="/create" className="btn">Open Create</Link>
-      </div>
       </div>
       <aside className="home-avatar" aria-label="Your avatar">
       <h2>Your Avatar</h2>
@@ -64,7 +58,6 @@ export default function HomePage() {
         <Avatar3D data={data} width={148} height={198} />
       </Link>
       <Link href="/avatar" className="btn btn-primary w-full">Customize Avatar</Link>
-      <Link href="/marketplace" className="link mt-3 block text-sm">Browse Marketplace</Link>
       </aside>
       </div>
     </>
