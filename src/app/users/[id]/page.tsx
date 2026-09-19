@@ -76,7 +76,7 @@ async function loadProfile(userId: string, myPlayFabId: string): Promise<Profile
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const { session, data } = usePlayer();
+  const { session, data, isBlocked, setBlocked } = usePlayer();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -102,6 +102,14 @@ export default function ProfilePage() {
 
   const mine = profile.playFabId === session.playFabId;
   const avatar = mine ? data : profile.avatar;
+  const blocked = isBlocked(profile.playFabId);
+
+  function toggleBlock() {
+    setBusy(true);
+    setBlocked(profile!.playFabId, !blocked)
+      .catch((e) => setDialog({ title: "Blocking", message: e instanceof Error ? e.message : String(e) }))
+      .finally(() => setBusy(false));
+  }
 
   function friendAction(action: (id: string) => Promise<string>) {
     setBusy(true);
@@ -160,16 +168,29 @@ export default function ProfilePage() {
                 Unfriend
               </button>
             ) : (
-              <button className="btn btn-primary" disabled={busy} onClick={() => friendAction(sendFriendRequest)}>
+              <button className="btn btn-primary" disabled={busy || blocked} onClick={() => friendAction(sendFriendRequest)}>
                 Add Friend
+              </button>
+            )}
+            {!mine && (
+              <button className="btn" disabled={busy} onClick={toggleBlock}>
+                {blocked ? "Unblock" : "Block"}
               </button>
             )}
           </div>
         </div>
       </div>
 
+      {blocked && (
+        <p className="mt-3 border border-[#e0d6ef] bg-[#faf7fd] px-3 py-2 text-sm text-[#5a02b8]">
+          You have blocked this player. Their About text, chat and messages are hidden from you until you unblock them.
+        </p>
+      )}
+
       <h2 className="h2">About</h2>
-      <p className="muted whitespace-pre-line">{profile.blurb.trim() || "This player hasn't written anything yet."}</p>
+      <p className="muted whitespace-pre-line">
+        {blocked ? "Hidden because you blocked this player." : profile.blurb.trim() || "This player hasn't written anything yet."}
+      </p>
 
       <h2 className="h2">Games ({profile.places.length})</h2>
       {profile.places.length === 0 ? (

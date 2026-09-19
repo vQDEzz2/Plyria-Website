@@ -21,6 +21,9 @@ type Account = {
   blurb: string;
   displayName: string;
   userId: string;
+  blocked: string[];
+  isBlocked: (playFabId: string) => boolean;
+  setBlocked: (playFabId: string, block: boolean) => Promise<void>;
   refresh: () => Promise<void>;
   save: (next: PlayerData) => Promise<void>;
   setBlurb: (text: string) => void;
@@ -37,6 +40,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [info, setInfo] = useState<pf.AccountInfo | null>(null);
   const [data, setData] = useState<PlayerData | null>(null);
   const [blurb, setBlurb] = useState("");
+  const [blocked, setBlockedList] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     const current = pf.getSession();
@@ -51,7 +55,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     try {
       const [account, userData, inventory] = await Promise.all([
         pf.getAccountInfo(),
-        pf.getUserData(["PlayerData", "Blurb"]),
+        pf.getUserData(["PlayerData", "Blurb", "Blocked"]),
         pf.getInventory(),
       ]);
       let saved: unknown = null;
@@ -67,6 +71,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       setInfo(account);
       setData(player);
       setBlurb(pf.unpackText(userData.Blurb));
+      setBlockedList(pf.readBlocked(userData.Blocked));
       if (!saved) await pf.updateUserData({ PlayerData: JSON.stringify(player) });
     } catch (e) {
       if (e instanceof pf.PlayFabError && e.code === "NotAuthenticated") setSession(null);
@@ -87,11 +92,22 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     await pf.updateUserData({ PlayerData: JSON.stringify(next) });
   }, []);
 
+  // Blocks or unblocks a player. The page updates straight away, then the list is saved.
+  const setBlocked = useCallback(async (playFabId: string, block: boolean) => {
+    let next: string[] = [];
+    setBlockedList((current) => {
+      next = block ? [...new Set([...current, playFabId])] : current.filter((id) => id !== playFabId);
+      return next;
+    });
+    await pf.saveBlocked(next);
+  }, []);
+
   const logOut = useCallback(() => {
     pf.clearSession();
     setSession(null);
     setInfo(null);
     setData(null);
+    setBlockedList([]);
   }, []);
 
   const value: Account = {
@@ -103,6 +119,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     blurb,
     displayName: info?.TitleInfo?.DisplayName || info?.Username || "",
     userId: session ? pf.toUserId(session.playFabId) : "",
+    blocked,
+    isBlocked: (playFabId) => blocked.includes(playFabId),
+    setBlocked,
     refresh,
     save,
     setBlurb,

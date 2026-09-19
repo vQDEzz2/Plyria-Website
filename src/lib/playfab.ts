@@ -188,8 +188,29 @@ export const getUserData = (keys: string[], playFabId?: string) =>
     (d) => Object.fromEntries(Object.entries(d.Data ?? {}).map(([k, v]) => [k, v.Value])) as Record<string, string>,
   );
 
-export const updateUserData = (data: Record<string, string>, keysToRemove: string[] = []) =>
-  call("UpdateUserData", { Data: data, KeysToRemove: keysToRemove, Permission: "Public" });
+export const updateUserData = (
+  data: Record<string, string>,
+  keysToRemove: string[] = [],
+  permission: "Public" | "Private" = "Public",
+) => call("UpdateUserData", { Data: data, KeysToRemove: keysToRemove, Permission: permission });
+
+// ---------- Blocked players ----------
+// The accounts this player has blocked, kept private in their own user data under "Blocked". The game reads
+// the same key. Blocking is one-way and only changes what this player sees, so no server has to enforce it.
+
+export function readBlocked(value: string | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const ids = (parsed as { ids?: unknown })?.ids;
+    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export const saveBlocked = (ids: string[]) =>
+  updateUserData({ Blocked: JSON.stringify({ ids }) }, [], "Private");
 
 // ---------- Plyrium and items (Legacy economy: currency "PL", catalog "Marketplace") ----------
 

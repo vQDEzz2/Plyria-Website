@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import AvatarHeadshot from "@/components/AvatarHeadshot";
+import { useAccount } from "@/lib/account";
 import { toUserId } from "@/lib/playfab";
 
 // A row of friends, like the classic profile Friends box: avatar headshot, name, link to the profile.
@@ -14,10 +15,12 @@ export default function FriendList({
   empty: string;
   max?: number;
 }) {
-  if (friends.length === 0) return <p className="muted">{empty}</p>;
+  const { isBlocked } = useAccount();
+  const shown = friends.filter((friend) => !isBlocked(friend.playFabId));
+  if (shown.length === 0) return <p className="muted">{empty}</p>;
   return (
     <div className="flex flex-wrap gap-2">
-      {friends.slice(0, max).map((friend) => (
+      {shown.slice(0, max).map((friend) => (
         <Link
           key={friend.playFabId}
           href={`/users/${toUserId(friend.playFabId)}`}

@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, formatDate, type Dialog } from "@/components/ui";
 import { usePlayer } from "@/lib/account";
 import { hasBadWords } from "@/lib/filter";
-import { packText, sendPasswordReset, setDisplayName, updateUserData } from "@/lib/playfab";
+import { getAccountInfo, packText, sendPasswordReset, setDisplayName, toUserId, updateUserData } from "@/lib/playfab";
 
 type Status = { text: string; error: boolean };
 
@@ -31,7 +32,27 @@ export default function SettingsPage() {
   const [blurb, setBlurb] = useState(account.blurb);
   const [blurbStatus, setBlurbStatus] = useState<Status>({ text: "", error: false });
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [blockedNames, setBlockedNames] = useState<Record<string, string>>({});
   const email = account.info?.PrivateInfo?.Email;
+
+  // The blocked list only stores account IDs, so look up a name for each one to show.
+  const blockedKey = account.blocked.join(",");
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      account.blocked.map((id) =>
+        getAccountInfo({ PlayFabId: id })
+          .then((info) => [id, info.TitleInfo?.DisplayName || info.Username || id] as const)
+          .catch(() => [id, id] as const),
+      ),
+    ).then((pairs) => {
+      if (!cancelled) setBlockedNames(Object.fromEntries(pairs));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the list of IDs is what matters, not its identity
+  }, [blockedKey]);
 
   const run = async (setStatus: (s: Status) => void, work: () => Promise<string>) => {
     setStatus({ text: "Saving...", error: false });
@@ -110,6 +131,28 @@ export default function SettingsPage() {
         </button>
         <StatusText status={blurbStatus} />
       </div>
+
+      <h2 className="h2">Blocked Players ({account.blocked.length})</h2>
+      <p className="muted">
+        You don&apos;t see a blocked player&apos;s chat, bubbles or About text, here or in the game. Blocking is
+        one-way: they are not told, and they can still see you.
+      </p>
+      {account.blocked.length === 0 ? (
+        <p className="muted mt-1">You haven&apos;t blocked anyone.</p>
+      ) : (
+        <div className="mt-1 w-full max-w-[420px] border border-[#cccccc] bg-white">
+          {account.blocked.map((id) => (
+            <div key={id} className="flex items-center gap-2 border-b border-[#eeeeee] px-2 py-1.5 last:border-b-0">
+              <Link href={`/users/${toUserId(id)}`} className="link flex-1 truncate text-sm">
+                {blockedNames[id] ?? "Loading..."}
+              </Link>
+              <button className="btn" onClick={() => account.setBlocked(id, false)}>
+                Unblock
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h2 className="h2">Game Settings</h2>
       <p className="muted">Graphics quality and volume are in the game&apos;s menu (Esc, then Settings).</p>
