@@ -166,17 +166,28 @@ async function buildAvatar(data: PlayerData): Promise<Build> {
   const pantsMaterial = decal(pantsMap, 1);
   const shirtMaterial = decal(shirtMap, 2);
 
+  // Some bundles split a part into skin and trim, marked with usemtl in the .obj. Trim keeps its own colour
+  // instead of taking the body colour, the way a second material does on the model in Unity.
+  const trim = new THREE.MeshStandardMaterial({ color: new THREE.Color("#767a7c"), roughness: 0.4, metalness: 0.1 });
+  materials.push(trim);
+  const isTrim = (mesh: THREE.Mesh) => {
+    const material = mesh.material;
+    const name = Array.isArray(material) ? material[0]?.name : material?.name;
+    return name === "metal";
+  };
+
   const jobs: Promise<THREE.Object3D | null>[] = PART_FILES.map(async (file, i) => {
     const url = `/models/${bundleForPart(data, i).id}/${file}.obj`;
     const group = await loadModel(url);
     const material = skin(i === 0 ? headSkin : bodySkin, rgbaToHex(data.bodyColors[i]));
     const parts = meshesOf(group); // before any clothing layer is added
-    parts.forEach((mesh) => (mesh.material = material));
+    const skinParts = parts.filter((mesh) => !isTrim(mesh));
+    parts.forEach((mesh) => (mesh.material = isTrim(mesh) ? trim : material));
 
     const region = PART_REGIONS[i];
     const isTorso = i === 1, isArm = i === 2 || i === 3, isLeg = i === 4 || i === 5;
-    if (region && pantsMaterial && (isTorso || isLeg)) group.add(clothingLayer(parts, url, region, pantsMaterial));
-    if (region && shirtMaterial && (isTorso || isArm)) group.add(clothingLayer(parts, url, region, shirtMaterial));
+    if (region && pantsMaterial && (isTorso || isLeg)) group.add(clothingLayer(skinParts, url, region, pantsMaterial));
+    if (region && shirtMaterial && (isTorso || isArm)) group.add(clothingLayer(skinParts, url, region, shirtMaterial));
     return group;
   });
 

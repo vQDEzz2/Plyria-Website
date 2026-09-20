@@ -140,6 +140,7 @@ export const BUNDLES: BundleItem[] = [
   { id: "classic", name: "Classic", price: 0, starter: true },
   { id: "female", name: "Female", price: 0, image: "/images/bundle-female.png" },
   { id: "wedge-head", name: "Wedge Head", price: 65, image: "/images/bundle-wedge-head.png", parts: [0] },
+  { id: "animatronic", name: "Animatronic", price: 120, image: "/images/bundle-animatronic.png" },
 ];
 
 // True when this bundle has a mesh for that body part.
